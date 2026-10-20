@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>小簡的注音大冒險 — 冒險地圖</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #6cc6f5; overflow: hidden; }
+  body { font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; user-select: none; -webkit-user-select: none; touch-action: none; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+
+  .hud { position: fixed; top: 14px; left: 16px; display: flex; gap: 10px; pointer-events: none; }
+  .pill { background: rgba(255,250,235,.92); border: 3px solid #3b2414; border-radius: 999px; padding: 6px 16px;
+          font-size: 20px; font-weight: 800; color: #3b2414; box-shadow: 0 3px 0 #3b2414; display: flex; align-items: center; gap: 6px; }
+  .pill b { color: #d0552b; }
+  .pill.hidden { display: none; }
+  .gem-icon { width: 16px; height: 20px; background: #4fc3f7; border: 2.5px solid #3b2414; clip-path: polygon(50% 0, 100% 35%, 50% 100%, 0 35%); }
+
+  .overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(40,90,130,.35); }
+  .overlay.hidden { display: none; }
+  .overlay.danger { background: rgba(60,20,30,.45); }
+  .card { background: #fffaeb; border: 5px solid #3b2414; border-radius: 28px; padding: 28px 40px; text-align: center;
+          box-shadow: 0 8px 0 #3b2414; max-width: min(520px, 86vw); color: #3b2414; animation: pop .35s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .card h1 { margin: 0 0 8px; font-size: clamp(28px, 6vw, 44px); letter-spacing: 2px; }
+  .card h2 { margin: 0 0 8px; font-size: clamp(24px, 5vw, 36px); color: #c0392b; }
+  .card p { margin: 6px 0; font-size: 18px; line-height: 1.6; }
+  .card kbd { background: #fff; border: 2px solid #3b2414; border-radius: 6px; padding: 0 8px; font-family: inherit; font-weight: 700; }
+  .btn { margin-top: 16px; font: inherit; font-size: 22px; font-weight: 800; color: #fff; background: #f08a3c; border: 4px solid #3b2414;
+         border-radius: 999px; padding: 10px 36px; box-shadow: 0 5px 0 #3b2414; cursor: pointer; }
+  .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #3b2414; }
+
+  .toast { position: fixed; top: 76px; left: 50%; transform: translateX(-50%); background: #fffaeb; border: 4px solid #3b2414; border-radius: 18px;
+           padding: 8px 22px; font-size: 22px; font-weight: 800; color: #3b2414; box-shadow: 0 4px 0 #3b2414; pointer-events: none;
+           opacity: 0; transition: opacity .3s; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+
+  /* ───── 注音魔法對決 ───── */
+  .duel { background: #fffaeb; border: 5px solid #3b2414; border-radius: 28px; box-shadow: 0 8px 0 #3b2414; color: #3b2414;
+          width: min(1000px, 96vw); max-height: 94vh; overflow: auto; padding: 18px 22px; box-sizing: border-box; animation: pop .35s cubic-bezier(.2,1.6,.4,1); }
+  .duel-head { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+  .duel-head h2 { margin: 0; font-size: clamp(22px, 3.4vw, 32px); flex: 1; }
+  .duel-head canvas { width: 70px; height: 80px; }
+  .duel-head canvas.hit { animation: hit .5s; }
+  @keyframes hit { 0%,100% { transform: none; filter: none; } 20% { transform: translateX(-8px) rotate(-6deg); filter: brightness(2.2); }
+                   50% { transform: translateX(8px) rotate(5deg); } 75% { transform: translateX(-4px); } }
+  .hp { font-size: 28px; letter-spacing: 2px; }
+  .hp .lost { filter: grayscale(1); opacity: .35; }
+  .duel-body { display: flex; gap: 18px; flex-wrap: wrap; }
+  .pad { position: relative; flex: 1 1 440px; aspect-ratio: 4 / 3; background: #23364a; border: 4px solid #3b2414; border-radius: 18px; overflow: hidden; touch-action: none; }
+  .pad video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; transform: scaleX(-1); opacity: .55; }
+  .pad canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
+  .guide { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: min(26vw, 230px);
+           color: rgba(255,255,255,.18); pointer-events: none; opacity: 0; transition: opacity .4s; }
+  .guide.show { opacity: 1; }
+  .cam-status { position: absolute; left: 10px; bottom: 10px; right: 10px; color: #fff; font-size: 15px; font-weight: 700;
+                text-shadow: 0 1px 3px #000; pointer-events: none; }
+  .side { flex: 1 1 260px; display: flex; flex-direction: column; gap: 10px; }
+  .prompt { background: #fff; border: 3px solid #3b2414; border-radius: 18px; padding: 12px; text-align: center; }
+  .prompt .emoji { font-size: 64px; line-height: 1.1; }
+  .prompt .word { font-size: 34px; font-weight: 900; letter-spacing: 6px; }
+  .prompt p { margin: 4px 0 8px; font-size: 18px; }
+  .prompt mark { background: #ffe08a; padding: 0 4px; border-radius: 4px; }
+  .gesture { font-size: 15px; line-height: 1.7; background: #eef7ff; border: 2px dashed #6a9cc6; border-radius: 12px; padding: 8px 10px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sbtn { font: inherit; font-size: 17px; font-weight: 800; color: #3b2414; background: #fff; border: 3px solid #3b2414; border-radius: 999px;
+          padding: 6px 16px; box-shadow: 0 3px 0 #3b2414; cursor: pointer; }
+  .sbtn:active { transform: translateY(3px); box-shadow: none; }
+  .row .btn { margin-top: 0; font-size: 18px; padding: 6px 20px; flex: 1; }
+  .feedback { min-height: 32px; font-size: 22px; font-weight: 900; text-align: center; }
+  .feedback.ok { color: #2e9d4a; } .feedback.bad { color: #c0392b; }
+
+  .touch { position: fixed; bottom: 18px; display: none; gap: 14px; }
+  .touch.left { left: 18px; } .touch.right { right: 18px; }
+  .touch button { width: 76px; height: 76px; border-radius: 50%; border: 4px solid #3b2414; background: rgba(255,250,235,.85);
+                  font: inherit; font-size: 30px; font-weight: 900; color: #3b2414; box-shadow: 0 4px 0 #3b2414; touch-action: none; }
+  .touch button.on { transform: translateY(3px); box-shadow: 0 1px 0 #3b2414; background: #ffe7a8; }
+  .touch .jump { width: 92px; height: 92px; background: rgba(240,138,60,.9); color: #fff; font-size: 26px; }
+  @media (pointer: coarse) { .touch { display: flex; } }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div class="hud">
+  <div class="pill">距離 <b id="dist">0</b> 公尺</div>
+  <div class="pill"><span class="gem-icon"></span>寶石 <b id="gems">0</b></div>
+  <div class="pill hidden" id="zhuyinPill">注音 <b id="coins">0</b></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<div class="overlay" id="startScreen">
+  <div class="card">
+    <h1>小簡的注音大冒險</h1>
+    <p>先來小試身手！跳過小怪物、收集寶石，<br>一路往前走找到大怪物吧！</p>
+    <p><kbd>←</kbd> <kbd>→</kbd> 移動　<kbd>空白鍵</kbd> / <kbd>↑</kbd> 跳躍</p>
+    <p style="font-size:15px;opacity:.75">從上面踩小怪物可以打倒牠，按久一點跳得更高</p>
+    <button class="btn" id="startBtn">開始冒險</button>
+  </div>
+</div>
+
+<div class="overlay danger hidden" id="bossScreen">
+  <div class="card">
+    <h2>大怪物擋住去路了！</h2>
+    <p>只有注音魔法才能打敗牠！<br>伸出食指，在空中寫出正確的注音吧！</p>
+    <p style="font-size:15px;opacity:.7">需要開啟相機；沒有相機也可以用滑鼠或手指在框裡寫</p>
+    <button class="btn" id="challengeBtn">開始注音挑戰</button>
+  </div>
+</div>
+
+<div class="overlay danger hidden" id="duelScreen">
+  <div class="duel">
+    <div class="duel-head">
+      <canvas id="duelBoss" width="140" height="160"></canvas>
+      <h2>注音魔法對決</h2>
+      <div class="hp" id="bossHp"></div>
+    </div>
+    <div class="duel-body">
+      <div class="pad" id="pad">
+        <video id="cam" playsinline muted></video>
+        <div class="guide" id="guide"></div>
+        <canvas id="padCanvas"></canvas>
+        <div class="cam-status" id="camStatus"></div>
+      </div>
+      <div class="side">
+        <div class="prompt">
+          <div class="emoji" id="pEmoji"></div>
+          <div class="word" id="pWord"></div>
+          <p id="pText"></p>
+          <button class="sbtn" id="speakBtn">🔊 聽一聽</button>
+        </div>
+        <div class="gesture">☝️ 只伸出<b>食指</b>：寫字<br>🖐️ <b>張開手掌</b>停一下：送出魔法<br>✊ <b>握拳</b>停一下：擦掉重寫</div>
+        <div class="row">
+          <button class="sbtn" id="clearBtn">擦掉</button>
+          <button class="sbtn" id="hintBtn">提示</button>
+          <button class="btn" id="submitBtn">送出魔法 ⚡</button>
+        </div>
+        <div class="feedback" id="feedback"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="touch left">
+  <button data-key="left">◀</button>
+  <button data-key="right">▶</button>
+</div>
+<div class="touch right">
+  <button class="jump" data-key="jump">跳</button>
+</div>
+
+<script>
+(() => {
+  // ───────── 基本設定 ─────────
+  const VIEW_H = 540;               // 世界座標的畫面高度（寬度依螢幕比例）
+  const FLOOR = 640;                // 地面方塊延伸到的底部（畫面外）
+  const BIOME_LEN = 4200;           // 每個場景的長度，草地 / 沙灘交替
+  const BOSS_AT = 4600;             // 小試身手區段長度（約 92 公尺）後出現大怪物
+  const G = 2100, JUMP_V = 820, MAX_VX = 290, ACCEL = 2400, FRICTION = 2600, AIR_ACCEL = 1700;
+  const COYOTE = 0.1, BUFFER = 0.13;
+  const ZHUYIN = 'ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄧㄨㄩㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦ';
+  const GEM_COLORS = [['#ff6b81', '#c2185b'], ['#4fc3f7', '#1976d2'], ['#7ee081', '#2e9d4a'], ['#c792ea', '#7b3fbf'], ['#ffd54f', '#e09a00']];
+
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  let scale = 1, viewW = 960, dpr = 1;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(innerWidth * dpr);
+    canvas.height = Math.round(innerHeight * dpr);
+    scale = canvas.height / VIEW_H;
+    viewW = canvas.width / scale;
+  }
+  addEventListener('resize', resize);
+  resize();
+
+  // ───────── 圖片 ─────────
+  const load = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+  const BIOMES = {
+    grass: { src: 'assets/grass.png', fillTop: '#4c9a6c', fillBot: '#2e5f45',
+             body: '#b97a48', bodyDark: '#94592f', cap: '#86d14e', capDark: '#5fae35', stone: '#d9b08c', line: '#3b2414' },
+    beach: { src: 'assets/beach.png', fillTop: '#3cc6d8', fillBot: '#1d8fb0',
+             body: '#e2a64c', bodyDark: '#c4842f', cap: '#f8e39a', capDark: '#e9c46a', stone: '#f3cf7d', line: '#4a2c12' },
+  };
+  const BIOME_ORDER = ['grass', 'beach'];
+  const biomeAt = x => BIOME_ORDER[Math.floor(Math.max(0, x) / BIOME_LEN) % BIOME_ORDER.length];
+
+  const IMG = { player: null, boss: null, minion: null, fire: null };
+
+  // 怪物原圖左邊有火球、左下角有小怪物，先把它們擦掉
+  function cleanBoss(img) {
+    if (!img) return null;
+    const c = document.createElement('canvas');
+    c.width = img.width; c.height = img.height;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    const sx = img.width / 447, sy = img.height / 520;
+    g.clearRect(0, 236 * sy, 24 * sx, 108 * sy);
+    g.clearRect(0, 436 * sy, 98 * sx, 90 * sy);
+    return c;
+  }
+
+  // ───────── 亂數 ─────────
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const randi = (a, b) => Math.floor(rand(a, b + 1));
+  const chance = p => Math.random() < p;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  // ───────── 台階繪製（預先畫到離屏畫布） ─────────
+  const RES = 2;
+  function makeBlock(w, h, biomeKey, floating) {
+    const b = BIOMES[biomeKey];
+    const pad = 6;
+    const oc = document.createElement('canvas');
+    oc.width = Math.ceil((w + pad * 2) * RES);
+    oc.height = Math.ceil((h + pad * 2) * RES);
+    const c = oc.getContext('2d');
+    c.scale(RES, RES);
+    c.translate(pad, pad);
+    c.lineJoin = 'round';
+    const r = floating ? 14 : 12;
+
+    roundRect(c, 0, 0, w, h, r);
+    c.fillStyle = b.body; c.fill();
+    c.save(); c.clip();
+    const grd = c.createLinearGradient(0, 0, 0, h);
+    grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(60,25,0,.22)');
+    c.fillStyle = grd; c.fillRect(0, 0, w, h);
+    const n = Math.max(2, Math.floor(w * Math.min(h, 220) / 2600));
+    for (let i = 0; i < n; i++) {
+      const sx = rand(10, w - 10), sy = rand(30, Math.min(h, 220) - 8);
+      if (biomeKey === 'grass') {
+        const rw = rand(6, 14), rh = rw * rand(.55, .75);
+        c.beginPath(); c.ellipse(sx, sy, rw, rh, 0, 0, Math.PI * 2);
+        c.fillStyle = chance(.5) ? b.stone : b.bodyDark; c.fill();
+        c.lineWidth = 2; c.strokeStyle = b.line; c.globalAlpha = .55; c.stroke(); c.globalAlpha = 1;
+      } else {
+        c.beginPath(); c.arc(sx, sy, rand(1.5, 3.2), 0, Math.PI * 2);
+        c.fillStyle = b.bodyDark; c.fill();
+      }
+    }
+    const capH = floating ? 18 : 22;
+    c.beginPath();
+    c.moveTo(-2, -2); c.lineTo(w + 2, -2); c.lineTo(w + 2, capH - 4);
+    const waves = Math.max(2, Math.round(w / 26));
+    const ww = (w + 4) / waves;
+    for (let i = waves; i > 0; i--) {
+      const x1 = -2 + i * ww, x0 = x1 - ww;
+      c.quadraticCurveTo((x0 + x1) / 2, capH + 8, x0, capH - 4 + (i % 2 ? 0 : 2));
+    }
+    c.closePath();
+    c.fillStyle = b.cap; c.fill();
+    c.lineWidth = 3; c.strokeStyle = b.line; c.stroke();
+    c.fillStyle = 'rgba(255,255,255,.28)';
+    c.fillRect(4, 3, w - 8, 4);
+    c.restore();
+
+    roundRect(c, 0, 0, w, h, r);
+    c.lineWidth = 4; c.strokeStyle = b.line; c.stroke();
+
+    const tufts = Math.floor(w / 110) + (chance(.5) ? 1 : 0);
+    for (let i = 0; i < tufts; i++) {
+      const tx = rand(14, w - 14);
+      if (biomeKey === 'grass') drawTuft(c, tx, 1, b);
+      else if (chance(.4)) drawShell(c, tx, 0, b);
+      else drawTuft(c, tx, 1, { cap: '#5fbf55', capDark: '#3f9a3c', line: b.line });
+    }
+    return { canvas: oc, pad };
+  }
+
+  function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y); c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r);
+    c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    c.lineTo(x + r, y + h); c.quadraticCurveTo(x, y + h, x, y + h - r);
+    c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y); c.closePath();
+  }
+  function drawTuft(c, x, y, b) {
+    c.beginPath();
+    c.moveTo(x - 8, y);
+    c.quadraticCurveTo(x - 9, y - 9, x - 5, y - 12);
+    c.quadraticCurveTo(x - 3, y - 6, x - 1, y - 4);
+    c.quadraticCurveTo(x, y - 14, x + 3, y - 16);
+    c.quadraticCurveTo(x + 4, y - 8, x + 5, y - 5);
+    c.quadraticCurveTo(x + 8, y - 11, x + 11, y - 11);
+    c.quadraticCurveTo(x + 9, y - 4, x + 9, y);
+    c.closePath();
+    c.fillStyle = b.capDark; c.fill();
+    c.lineWidth = 2.2; c.strokeStyle = b.line; c.stroke();
+  }
+  function drawShell(c, x, y, b) {
+    c.beginPath();
+    c.moveTo(x - 8, y); c.quadraticCurveTo(x - 9, y - 13, x, y - 13); c.quadraticCurveTo(x + 9, y - 13, x + 8, y);
+    c.closePath();
+    c.fillStyle = '#f7a6b8'; c.fill(); c.lineWidth = 2; c.strokeStyle = b.line; c.stroke();
+    c.beginPath(); c.moveTo(x, y); c.lineTo(x, y - 11); c.moveTo(x - 4, y); c.lineTo(x - 5, y - 9); c.moveTo(x + 4, y); c.lineTo(x + 5, y - 9);
+    c.lineWidth = 1.4; c.stroke();
+  }
+
+  // ───────── 世界生成（無限往右） ─────────
+  // 收集物：小試身手區段是寶石，打敗大怪物之後才出現注音
+  let platforms = [], items = [], minions = [], particles = [], popups = [], flames = [];
+  let gen = null, boss = null;
+
+  function addPlatform(x, y, w, floating) {
+    const h = floating ? randi(40, 52) : FLOOR - y;
+    const biome = biomeAt(x + w / 2);
+    const p = { x, y, w, h, floating, biome, art: makeBlock(w, h, biome, floating) };
+    platforms.push(p);
+    return p;
+  }
+  function addItemRow(x, y, n) {
+    const zhuyin = x > gen.zhuyinFrom;
+    for (let i = 0; i < n; i++) {
+      items.push(zhuyin
+        ? { kind: 'zhuyin', x: x + i * 38, y, ch: ZHUYIN[randi(0, ZHUYIN.length - 1)], t: Math.random() * 6 }
+        : { kind: 'gem', x: x + i * 38, y, color: GEM_COLORS[randi(0, GEM_COLORS.length - 1)], t: Math.random() * 6 });
+    }
+  }
+  function addMinion(seg) {
+    const w = 62, h = 44;
+    minions.push({ x: rand(seg.x + 20, seg.x + seg.w - w - 20), y: seg.y - h, w, h, dir: -1,
+                   minX: seg.x + 6, maxX: seg.x + seg.w - w - 6, speed: rand(45, 80), t: Math.random() * 6, dead: 0 });
+  }
+
+  function resetWorld() {
+    platforms = []; items = []; minions = []; particles = []; popups = []; flames = [];
+    gen = { x: 900, y: 420, zhuyinFrom: Infinity, bossPlaced: false };
+    addPlatform(-400, 420, 1300, false);       // 起點平地
+    addItemRow(420, 360, 3);
+    boss = null;
+  }
+
+  // 大怪物的競技場：一段長平地，怪物站在右邊
+  function placeBoss() {
+    const ay = clamp(gen.y, 380, 440);
+    const gap = 0;
+    const arena = addPlatform(gen.x + gap, ay, 1150, false);
+    const h = 230, w = h * 447 / 520;
+    boss = { x: arena.x + 760, y: ay - h, w, h, state: 'idle', t: 0, hit: 0 };
+    gen.x = arena.x + arena.w;
+    gen.y = ay;
+    gen.zhuyinFrom = boss.x + w;          // 大怪物之後開始出現注音
+    gen.bossPlaced = true;
+  }
+
+  // 依跳躍能力（最高約 160、最遠約 220）設計，確保每一段都跳得過去
+  function generateUntil(limitX) {
+    while (gen.x < limitX) {
+      if (!gen.bossPlaced && gen.x >= BOSS_AT) { placeBoss(); continue; }
+      const roll = Math.random();
+      let gap = 0;
+      if (roll < 0.18) {
+        gap = rand(230, 320);
+        const fw = rand(100, 150);
+        const fy = gen.y - rand(30, 90);
+        const fx = gen.x + (gap - fw) / 2;
+        addPlatform(fx, fy, fw, true);
+        addItemRow(fx + fw / 2 - 19, fy - 50, 2);
+        gen.lastFloatY = fy;
+      } else if (roll < 0.55) {
+        gap = rand(60, 140);
+      }
+
+      let ny = gen.y + (chance(.5) ? -rand(30, 95) : rand(20, 130));
+      if (chance(.2)) ny = gen.y;
+      ny = clamp(ny, 300, 470);
+      const rise = gen.y - ny;
+      if (rise > 0 && gap > 0 && gap < 200) gap = Math.min(gap, 150 - rise * 0.6);
+      if (gen.lastFloatY !== undefined) ny = Math.max(ny, gen.lastFloatY - 80);
+      gen.lastFloatY = undefined;
+
+      const gx = gen.x + gap;
+      const gw = rand(170, 520);
+      const seg = addPlatform(gx, ny, gw, false);
+
+      // 小怪物：在夠寬的地面上走來走去（起點附近先不放）
+      if (gx > 1300 && gw > 260 && chance(.55)) addMinion(seg);
+
+      if (chance(.35)) addItemRow(gx + rand(20, Math.max(30, gw - 140)), ny - 46, randi(2, 3));
+
+      if (chance(.65)) {
+        let fw = rand(90, 190);
+        let fx = gx + rand(-40, Math.max(-30, gw - fw + 30));
+        let fy = ny - rand(105, 135);
+        addPlatform(fx, fy, fw, true);
+        if (chance(.6)) addItemRow(fx + fw / 2 - 38, fy - 46, 3);
+
+        let level = 1;
+        while (level < 3 && fy > 230 && chance(level === 1 ? .55 : .4)) {
+          const nw = rand(80, 160);
+          const dir = chance(.5) ? 1 : -1;
+          const nx = dir > 0 ? fx + fw + rand(-20, 90) : fx - nw - rand(-20, 90);
+          const nyF = Math.max(125, fy - rand(100, 125));
+          addPlatform(nx, nyF, nw, true);
+          addItemRow(nx + nw / 2 - 38, nyF - 46, 3);       // 越高獎勵越多
+          fx = nx; fw = nw; fy = nyF; level++;
+        }
+      }
+
+      gen.x = gx + gw;
+      gen.y = ny;
+    }
+  }
+
+  function cleanup(camX) {
+    const cut = camX - 600;
+    platforms = platforms.filter(p => p.x + p.w > cut);
+    items = items.filter(c => !c.got && c.x > cut);
+    minions = minions.filter(m => m.x > cut && m.dead < 0.6);
+  }
+
+  // ───────── 玩家 ─────────
+  const P_W = 40, P_H = 72;
+  const player = {};
+  function resetPlayer() {
+    Object.assign(player, { x: 60, y: 420 - P_H, vx: 0, vy: 0, onGround: true, face: 1, coyote: 0, buffer: 0,
+                            walkT: 0, squash: 1, blink: 0, safeX: 60, safeY: 420 - P_H, ground: null });
+  }
+
+  // ───────── 輸入 ─────────
+  const keys = { left: false, right: false, jump: false };
+  let jumpPressed = false;
+  const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'jump', KeyW: 'jump', Space: 'jump' };
+  addEventListener('keydown', e => {
+    const k = KEYMAP[e.code];
+    if (state === 'start' && (k || e.code === 'Enter')) { e.preventDefault(); startGame(); return; }
+    if (state === 'boss-wait' && e.code === 'Enter') { startChallenge(); return; }
+    if (!k) return;
+    e.preventDefault();
+    if (k === 'jump' && !keys.jump) jumpPressed = true;
+    keys[k] = true;
+  });
+  addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+  addEventListener('blur', () => { keys.left = keys.right = keys.jump = false; });
+
+  document.querySelectorAll('.touch button').forEach(btn => {
+    const k = btn.dataset.key;
+    const down = e => { e.preventDefault(); if (state === 'start') startGame(); if (k === 'jump' && !keys.jump) jumpPressed = true; keys[k] = true; btn.classList.add('on'); };
+    const up = e => { e.preventDefault(); keys[k] = false; btn.classList.remove('on'); };
+    btn.addEventListener('pointerdown', down);
+    btn.addEventListener('pointerup', up);
+    btn.addEventListener('pointercancel', up);
+    btn.addEventListener('pointerleave', up);
+  });
+
+  // ───────── 遊戲流程 ─────────
+  // start → play → boss-intro（怪物吼叫）→ boss-wait（挑戰視窗）→ play（打敗後進入注音區）
+  let state = 'start';
+  const cam = { x: -60, shake: 0 };
+  let gemCount = 0, coinCount = 0, bestX = 0;
+  const distEl = document.getElementById('dist'), gemEl = document.getElementById('gems'), coinEl = document.getElementById('coins');
+  const startScreen = document.getElementById('startScreen'), bossScreen = document.getElementById('bossScreen');
+  const toastEl = document.getElementById('toast');
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('challengeBtn').addEventListener('click', startChallenge);
+
+  let toastTimer = 0;
+  function toast(msg, sec = 2.2) {
+    toastEl.textContent = msg; toastEl.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('show'), sec * 1000);
+  }
+
+  function startGame() {
+    if (state !== 'start') return;
+    state = 'play';
+    startScreen.classList.add('hidden');
+    window.ZhuyinDuel.preload();
+  }
+
+  function startChallenge() {
+    if (state !== 'boss-wait') return;
+    bossScreen.classList.add('hidden');
+    state = 'duel';
+    window.ZhuyinDuel.open(IMG.boss, () => defeatBoss());
+  }
+
+  function defeatBoss() {
+    boss.state = 'defeated'; boss.t = 0;
+    cam.shake = 0.4;
+    for (let i = 0; i < 24; i++) particles.push({ x: boss.x + boss.w / 2, y: boss.y + boss.h / 2, vx: rand(-320, 320), vy: rand(-420, -60), t: 0, life: .9, star: true });
+    state = 'play';
+    document.getElementById('zhuyinPill').classList.remove('hidden');
+    toast('打敗大怪物了！接下來收集注音符號吧！', 3);
+  }
+
+  // ───────── 物理 ─────────
+  const overlap = (ax, ay, aw, ah, b) => ax < b.x + b.w && ax + aw > b.x && ay < b.y + b.h && ay + ah > b.y;
+
+  function step(dt) {
+    const p = player;
+    const control = state === 'play';
+    const dir = control ? (keys.right ? 1 : 0) - (keys.left ? 1 : 0) : 0;
+    const acc = p.onGround ? ACCEL : AIR_ACCEL;
+    if (dir) {
+      p.vx += dir * acc * dt;
+      p.face = dir;
+    } else if (p.onGround) {
+      const f = FRICTION * dt;
+      p.vx = Math.abs(p.vx) <= f ? 0 : p.vx - Math.sign(p.vx) * f;
+    }
+    p.vx = clamp(p.vx, -MAX_VX, MAX_VX);
+
+    // 跳躍（土狼時間 + 預輸入緩衝 + 可變高度）
+    p.coyote = p.onGround ? COYOTE : p.coyote - dt;
+    if (jumpPressed && control) { p.buffer = BUFFER; }
+    jumpPressed = false;
+    p.buffer -= dt;
+    if (p.buffer > 0 && p.coyote > 0) {
+      p.vy = -JUMP_V; p.onGround = false; p.coyote = 0; p.buffer = 0; p.squash = 1.25;
+      puff(p.x + P_W / 2, p.y + P_H, 5);
+    }
+    if (!keys.jump && p.vy < -260 && !p.bounce) p.vy = -260;   // 放開跳躍鍵 → 跳低一點
+    if (p.vy >= 0) p.bounce = false;
+
+    p.vy = Math.min(p.vy + G * dt, 1100);
+
+    // X 軸
+    p.x += p.vx * dt;
+    if (p.x < cam.x + 4) { p.x = cam.x + 4; if (p.vx < 0) p.vx = 0; }   // 不能退出畫面左邊
+    if (boss && boss.state !== 'defeated' && p.x + P_W > boss.x + 40) { p.x = boss.x + 40 - P_W; p.vx = Math.min(p.vx, 0); }
+    for (const b of platforms) {
+      if (b.floating) continue;
+      if (overlap(p.x, p.y, P_W, P_H, b)) {
+        if (p.vx > 0 || p.x + P_W / 2 < b.x + b.w / 2) p.x = b.x - P_W; else p.x = b.x + b.w;
+        p.vx = 0;
+      }
+    }
+
+    // Y 軸
+    const prevBottom = p.y + P_H;
+    p.y += p.vy * dt;
+    const wasGround = p.onGround;
+    p.onGround = false;
+    for (const b of platforms) {
+      if (p.x + P_W <= b.x + 2 || p.x >= b.x + b.w - 2) continue;
+      if (b.floating) {
+        if (p.vy >= 0 && prevBottom <= b.y + 1 && p.y + P_H >= b.y) land(b);   // 單向台階
+      } else if (overlap(p.x, p.y, P_W, P_H, b)) {
+        if (p.vy >= 0 && prevBottom <= b.y + 12) land(b);
+        else if (p.vy < 0) { p.y = b.y + b.h; p.vy = 0; }
+      }
+    }
+    function land(b) {
+      p.y = b.y - P_H; p.vy = 0; p.onGround = true; p.ground = b;
+      if (!wasGround) { p.squash = 0.78; puff(p.x + P_W / 2, b.y, 4); }
+    }
+
+    if (p.onGround && !p.ground.floating && p.x > p.ground.x && p.x + P_W < p.ground.x + p.ground.w) {
+      p.safeX = p.x; p.safeY = p.y;
+    }
+
+    // 掉進坑洞 → 回到畫面內最近的地面
+    if (p.y > VIEW_H + 120) {
+      const minX = cam.x + 30;
+      const g = platforms
+        .filter(b => !b.floating && b.x + b.w - P_W - 10 > minX)
+        .sort((a, b) => Math.abs(Math.max(a.x + 10, minX) - p.safeX) - Math.abs(Math.max(b.x + 10, minX) - p.safeX))[0];
+      p.x = Math.min(Math.max(g.x + 10, minX, p.safeX), g.x + g.w - P_W - 10);
+      p.y = g.y - P_H; p.vx = 0; p.vy = 0; p.blink = 1.2; p.onGround = true; p.ground = g;
+    }
+
+    // 小怪物：巡邏、踩扁、被撞到會彈開
+    for (const m of minions) {
+      if (m.dead) { m.dead += dt; continue; }
+      m.t += dt;
+      m.x += m.dir * m.speed * dt;
+      if (m.x < m.minX) { m.x = m.minX; m.dir = 1; }
+      if (m.x > m.maxX) { m.x = m.maxX; m.dir = -1; }
+      const hb = { x: m.x + 8, y: m.y + 10, w: m.w - 16, h: m.h - 10 };
+      if (!overlap(p.x, p.y, P_W, P_H, hb)) continue;
+      if (p.vy > 0 && prevBottom <= hb.y + 14) {
+        m.dead = 0.001;
+        p.vy = keys.jump ? -720 : -520; p.bounce = true; p.squash = 1.2;
+        gemCount++;
+        popups.push({ x: m.x + m.w / 2, y: m.y, text: '+1', t: 0 });
+        for (let i = 0; i < 8; i++) particles.push({ x: m.x + m.w / 2, y: m.y + 10, vx: rand(-180, 180), vy: rand(-240, -60), t: 0, life: .5, star: true });
+      } else if (p.blink <= 0) {
+        const away = Math.sign((p.x + P_W / 2) - (m.x + m.w / 2)) || -1;
+        p.vx = away * 300; p.vy = -460; p.bounce = true; p.onGround = false; p.blink = 1.3;
+        cam.shake = 0.18;
+        if (gemCount > 0) {
+          gemCount--;
+          particles.push({ x: p.x + P_W / 2, y: p.y, vx: -away * 120, vy: -300, t: 0, life: .8, gem: GEM_COLORS[1] });
+        }
+      }
+    }
+
+    // 大怪物出現
+    if (boss) {
+      boss.t += dt;
+      boss.hit = Math.max(0, boss.hit - dt);
+      if (boss.state === 'idle' && p.x + P_W > boss.x - 330 && state === 'play') {
+        boss.state = 'roar'; boss.t = 0; state = 'boss-intro';
+        p.vx = 0;
+      }
+      if (boss.state === 'roar') {
+        cam.shake = Math.max(cam.shake, boss.t < 1.4 ? 0.12 : 0);
+        if (boss.t > 0.3 && boss.t < 1.4 && Math.random() < dt * 9) {
+          flames.push({ x: boss.x + boss.w * 0.08, y: boss.y + boss.h * 0.55 + rand(-12, 12), vx: rand(-360, -240), vy: rand(-30, 30), t: 0, life: .7, rot: rand(0, 6) });
+        }
+        if (boss.t > 1.8 && state === 'boss-intro') {
+          state = 'boss-wait';
+          bossScreen.classList.remove('hidden');
+        }
+      }
+    }
+    for (const f of flames) { f.t += dt; f.x += f.vx * dt; f.y += f.vy * dt; f.rot += dt * 6; }
+    flames = flames.filter(f => f.t < f.life);
+
+    // 走路動畫
+    if (p.onGround && Math.abs(p.vx) > 20) {
+      p.walkT += dt * (6 + Math.abs(p.vx) / 32);
+      if (Math.random() < dt * 6) puff(p.x + P_W / 2 - p.face * 14, p.y + P_H, 1);
+    } else if (p.onGround) p.walkT += (Math.round(p.walkT / Math.PI) * Math.PI - p.walkT) * Math.min(1, dt * 12);
+    p.squash += (1 - p.squash) * Math.min(1, dt * 10);
+    p.blink = Math.max(0, p.blink - dt);
+
+    // 收集寶石 / 注音
+    for (const c of items) {
+      if (c.got) continue;
+      c.t += dt;
+      if (Math.abs(c.x - (p.x + P_W / 2)) < 34 && Math.abs(c.y - (p.y + P_H / 2)) < 46) {
+        c.got = true;
+        if (c.kind === 'gem') { gemCount++; popups.push({ x: c.x, y: c.y, text: '+1', t: 0, small: true }); }
+        else { coinCount++; popups.push({ x: c.x, y: c.y, text: c.ch, t: 0 }); }
+        for (let i = 0; i < 8; i++) particles.push({ x: c.x, y: c.y, vx: rand(-160, 160), vy: rand(-220, -40), t: 0, life: .5, star: true });
+      }
+    }
+
+    // 粒子
+    for (const q of particles) { q.t += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy += (q.star || q.gem ? 600 : -30) * dt; }
+    particles = particles.filter(q => q.t < q.life);
+    for (const q of popups) q.t += dt;
+    popups = popups.filter(q => q.t < 1.1);
+
+    // 鏡頭：只往前（像瑪利歐）；大怪物出現時把牠帶進畫面
+    let target = p.x - viewW * 0.38;
+    if (boss && (state === 'boss-intro' || state === 'boss-wait')) target = Math.max(target, boss.x + boss.w + 60 - viewW);
+    if (target > cam.x) cam.x += (target - cam.x) * Math.min(1, dt * (state === 'play' ? 8 : 3));
+    cam.shake = Math.max(0, cam.shake - dt);
+
+    bestX = Math.max(bestX, p.x);
+    generateUntil(cam.x + viewW + 900);
+    cleanup(cam.x);
+  }
+
+  function puff(x, y, n) {
+    for (let i = 0; i < n; i++) particles.push({ x: x + rand(-10, 10), y: y - rand(0, 6), vx: rand(-60, 60), vy: rand(-50, -10), t: 0, life: rand(.3, .55), r: rand(4, 8) });
+  }
+
+  // ───────── 繪圖 ─────────
+  const BG_CROP = 0.72;     // 只用場景圖上半部（天空、山、樹），地面由程式畫
+  const BG_H = 470;
+
+  function drawBiomeBg(key, alpha) {
+    const b = BIOMES[key], img = b.img;
+    ctx.globalAlpha = alpha;
+    const g = ctx.createLinearGradient(0, BG_H - 30, 0, VIEW_H);
+    g.addColorStop(0, b.fillTop); g.addColorStop(1, b.fillBot);
+    ctx.fillStyle = g; ctx.fillRect(0, BG_H - 30, viewW + 2, VIEW_H - BG_H + 32);
+    if (img) {
+      const sh = img.height * BG_CROP;
+      const bw = img.width * BG_H / sh;
+      const off = cam.x * 0.35;
+      const first = Math.floor(off / bw);
+      for (let i = first; i * bw - off < viewW; i++) {
+        const x = i * bw - off;
+        if (i % 2) {
+          ctx.save(); ctx.translate(x + bw, 0); ctx.scale(-1, 1);
+          ctx.drawImage(img, 0, 0, img.width, sh, 0, 0, bw + 1, BG_H);
+          ctx.restore();
+        } else ctx.drawImage(img, 0, 0, img.width, sh, x - 0.5, 0, bw + 1, BG_H);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawGem(x, y, s, color) {
+    ctx.beginPath();
+    ctx.moveTo(x, y - 15 * s); ctx.lineTo(x + 14 * s, y - 4 * s); ctx.lineTo(x, y + 15 * s); ctx.lineTo(x - 14 * s, y - 4 * s); ctx.closePath();
+    ctx.fillStyle = color[0]; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x - 14 * s, y - 4 * s); ctx.lineTo(x + 14 * s, y - 4 * s); ctx.lineTo(x, y + 15 * s); ctx.closePath();
+    ctx.fillStyle = color[1]; ctx.globalAlpha *= .55; ctx.fill(); ctx.globalAlpha /= .55;
+    ctx.beginPath();
+    ctx.moveTo(x, y - 15 * s); ctx.lineTo(x + 14 * s, y - 4 * s); ctx.lineTo(x, y + 15 * s); ctx.lineTo(x - 14 * s, y - 4 * s); ctx.closePath();
+    ctx.lineWidth = 3; ctx.strokeStyle = '#3b2414'; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 5 * s, y - 9 * s); ctx.lineTo(x - 1 * s, y - 11 * s); ctx.lineTo(x - 7 * s, y - 4 * s); ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fill();
+  }
+
+  function draw() {
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    ctx.imageSmoothingQuality = 'high';
+
+    // 背景：依目前位置在草地 / 沙灘間淡入淡出
+    const mid = cam.x + viewW / 2;
+    const seg = Math.max(0, mid) / BIOME_LEN;
+    const idx = Math.floor(seg), frac = seg - idx;
+    const cur = BIOME_ORDER[idx % BIOME_ORDER.length], nxt = BIOME_ORDER[(idx + 1) % BIOME_ORDER.length];
+    const fade = clamp((frac - 0.9) / 0.1, 0, 1);
+    drawBiomeBg(cur, 1);
+    if (fade > 0) drawBiomeBg(nxt, fade);
+
+    ctx.save();
+    const sx = cam.shake > 0 ? rand(-5, 5) : 0, sy = cam.shake > 0 ? rand(-4, 4) : 0;
+    ctx.translate(-cam.x + sx, sy);
+
+    // 台階
+    for (const p of platforms) {
+      if (p.x > cam.x + viewW + 20 || p.x + p.w < cam.x - 20) continue;
+      const a = p.art;
+      if (p.floating) {
+        ctx.fillStyle = 'rgba(30,40,60,.13)';
+        ctx.beginPath(); ctx.ellipse(p.x + p.w / 2, p.y + p.h + 14, p.w * 0.42, 6, 0, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.drawImage(a.canvas, p.x - a.pad, p.y - a.pad, p.w + a.pad * 2, p.h + a.pad * 2);
+    }
+
+    // 寶石 / 注音
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const c of items) {
+      if (c.got || c.x < cam.x - 40 || c.x > cam.x + viewW + 40) continue;
+      const y = c.y + Math.sin(c.t * 3) * 4;
+      if (c.kind === 'gem') {
+        const s = 1 + Math.sin(c.t * 4) * 0.04;
+        drawGem(c.x, y, s, c.color);
+        if ((c.t * 1.3) % 3 < 0.25) {   // 偶爾閃一下
+          ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(c.x + 8, y - 10, 2.5, 0, Math.PI * 2); ctx.fill();
+        }
+        continue;
+      }
+      const sxc = Math.abs(Math.cos(c.t * 1.6)) * 0.35 + 0.65;
+      ctx.save(); ctx.translate(c.x, y); ctx.scale(sxc, 1);
+      ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffd34d'; ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = '#3b2414'; ctx.stroke();
+      ctx.beginPath(); ctx.arc(-4, -5, 5, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.fill();
+      ctx.fillStyle = '#7a3b10'; ctx.font = 'bold 19px "PingFang TC","Noto Sans TC",sans-serif';
+      ctx.fillText(c.ch, 0, 1.5);
+      ctx.restore();
+    }
+
+    // 小怪物
+    for (const m of minions) {
+      if (m.x > cam.x + viewW + 40 || m.x + m.w < cam.x - 40) continue;
+      const squash = m.dead ? Math.max(0.15, 1 - m.dead * 4) : 1 + Math.sin(m.t * 10) * 0.05;
+      ctx.save();
+      ctx.globalAlpha = m.dead ? Math.max(0, 1 - m.dead * 1.6) : 1;
+      ctx.translate(m.x + m.w / 2, m.y + m.h);
+      ctx.scale(m.dir > 0 ? -1 : 1, squash);      // 原圖面向左
+      if (IMG.minion) ctx.drawImage(IMG.minion, -m.w / 2 - 4, -m.h - 4, m.w + 8, m.h + 6);
+      else { ctx.fillStyle = '#6cc04a'; ctx.fillRect(-m.w / 2, -m.h, m.w, m.h); }
+      ctx.restore();
+    }
+
+    // 大怪物
+    if (boss && boss.x < cam.x + viewW + 300) {
+      let a = 1, s = 1, dy = 0, rot = 0;
+      if (boss.state === 'roar') s = 1 + Math.sin(Math.min(boss.t, 1.4) / 1.4 * Math.PI) * 0.08;
+      else if (boss.state === 'idle') s = 1 + Math.sin(boss.t * 2.2) * 0.015;
+      if (boss.state === 'defeated') {
+        const k = Math.min(1, boss.t / 1.2);
+        a = 1 - k; s = 1 - k * 0.6; rot = k * 1.2; dy = -k * 160;
+      }
+      if (a > 0.01) {
+        ctx.save(); ctx.globalAlpha = a;
+        ctx.fillStyle = 'rgba(30,20,10,.2)';
+        ctx.beginPath(); ctx.ellipse(boss.x + boss.w * 0.62, boss.y + boss.h, boss.w * 0.4, 9, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.translate(boss.x + boss.w / 2, boss.y + boss.h + dy);
+        ctx.rotate(rot); ctx.scale(s, s);
+        if (IMG.boss) ctx.drawImage(IMG.boss, -boss.w / 2, -boss.h, boss.w, boss.h);
+        ctx.restore();
+      }
+      if (boss.state === 'idle' && boss.x - cam.x < viewW + 40) {
+        ctx.fillStyle = '#c0392b'; ctx.font = '900 30px "PingFang TC","Noto Sans TC",sans-serif';
+        ctx.fillText('!', boss.x + boss.w * 0.4, boss.y - 18 + Math.sin(boss.t * 5) * 4);
+      }
+    }
+    for (const f of flames) {
+      const k = f.t / f.life;
+      ctx.save(); ctx.globalAlpha = 1 - k; ctx.translate(f.x, f.y); ctx.rotate(f.rot);
+      const s = 34 + k * 30;
+      if (IMG.fire) ctx.drawImage(IMG.fire, -s / 2, -s * 0.72, s, s * 1.45);
+      ctx.restore();
+    }
+
+    // 粒子
+    for (const q of particles) {
+      const k = 1 - q.t / q.life;
+      ctx.globalAlpha = k;
+      if (q.gem) drawGem(q.x, q.y, 0.8, q.gem);
+      else if (q.star) { ctx.fillStyle = '#ffe680'; ctx.beginPath(); ctx.arc(q.x, q.y, 3.5 * k + 1, 0, Math.PI * 2); ctx.fill(); }
+      else { ctx.fillStyle = '#fffaf0'; ctx.beginPath(); ctx.arc(q.x, q.y, q.r * (0.6 + 0.6 * (1 - k)), 0, Math.PI * 2); ctx.fill(); }
+    }
+    ctx.globalAlpha = 1;
+
+    drawPlayer();
+
+    // 跳出的文字
+    for (const q of popups) {
+      const k = q.t / 1.1;
+      ctx.globalAlpha = 1 - k * k;
+      ctx.font = `900 ${(q.small ? 22 : 34) + k * 10}px "PingFang TC","Noto Sans TC",sans-serif`;
+      ctx.lineWidth = 6; ctx.strokeStyle = '#fffaeb';
+      ctx.strokeText(q.text, q.x, q.y - 30 - k * 50);
+      ctx.fillStyle = '#d0552b';
+      ctx.fillText(q.text, q.x, q.y - 30 - k * 50);
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    distEl.textContent = Math.floor(Math.max(0, bestX) / 50);
+    gemEl.textContent = gemCount;
+    coinEl.textContent = coinCount;
+  }
+
+  function drawPlayer() {
+    const p = player;
+    if (p.blink > 0 && Math.floor(p.blink * 12) % 2) return;
+    const walking = p.onGround && Math.abs(p.vx) > 20;
+    const bob = walking ? Math.abs(Math.sin(p.walkT)) * 5 : 0;
+    const tilt = walking ? Math.sin(p.walkT) * 0.07 : (p.onGround ? 0 : clamp(p.vy / 4000, -0.12, 0.12));
+    const img = IMG.player;
+    const DH = 92, DW = img ? DH * img.width / img.height : 78;
+    const sy = p.squash, sx = 1 / Math.sqrt(sy);
+    const footX = p.x + P_W / 2, footY = p.y + P_H;
+
+    if (p.onGround) {
+      ctx.fillStyle = 'rgba(30,20,10,.18)';
+      ctx.beginPath(); ctx.ellipse(footX, footY, 24 - bob, 5, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.save();
+    ctx.translate(footX, footY - bob);
+    ctx.rotate(tilt * p.face);
+    ctx.scale(sx * p.face, sy);
+    if (img) ctx.drawImage(img, -DW / 2, -DH + 2, DW, DH);
+    else { ctx.fillStyle = '#7a7ac0'; ctx.fillRect(-P_W / 2, -P_H, P_W, P_H); }
+    ctx.restore();
+  }
+
+  // ───────── 主迴圈 ─────────
+  let last = performance.now(), acc = 0;
+  const STEP = 1 / 120;
+  window.__game = { player, cam, keys, get platforms() { return platforms; }, get minions() { return minions; }, get boss() { return boss; },
+                    get state() { return state; }, tick(sec) { for (let i = 0; i < sec * 120; i++) step(STEP); draw(); } };   // 除錯用
+  function frame(now) {
+    acc += Math.min(0.1, (now - last) / 1000);
+    last = now;
+    while (acc >= STEP) {
+      if (state !== 'start') step(STEP);
+      else for (const c of items) c.t += STEP;
+      acc -= STEP;
+    }
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  Promise.all([load('assets/xiaojian_pixel.png'), load(BIOMES.grass.src), load(BIOMES.beach.src),
+               load('assets/boss.png'), load('assets/minion.png'), load('assets/fire.png')]).then(([pi, g, b, bo, mi, fi]) => {
+    IMG.player = pi; IMG.boss = cleanBoss(bo); IMG.minion = mi; IMG.fire = fi;
+    BIOMES.grass.img = g; BIOMES.beach.img = b;
+    resetWorld(); resetPlayer();
+    generateUntil(viewW + 1200);
+    requestAnimationFrame(frame);
+  });
+})();
+</script>
+
+<script>
+// ═════════ 注音魔法對決：手勢偵測空中寫字 + 注音辨識 ═════════
+window.ZhuyinDuel = (() => {
+  const ZHUYIN = 'ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄧㄨㄩㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦ';
+  // 題目：圖 + 詞，寫出第一個字的聲母（或介音）
+  const WORDS = [
+    ['ㄅ', '👨', '爸爸'], ['ㄆ', '🍇', '葡萄'], ['ㄇ', '👩', '媽媽'], ['ㄈ', '✈️', '飛機'], ['ㄉ', '🐘', '大象'],
+    ['ㄊ', '🐰', '兔子'], ['ㄋ', '🐮', '牛奶'], ['ㄌ', '🐯', '老虎'], ['ㄍ', '🐶', '狗狗'], ['ㄎ', '🦖', '恐龍'],
+    ['ㄏ', '🌸', '花朵'], ['ㄐ', '🐔', '雞蛋'], ['ㄑ', '🐧', '企鵝'], ['ㄒ', '🍉', '西瓜'], ['ㄓ', '🕷️', '蜘蛛'],
+    ['ㄔ', '🚗', '車子'], ['ㄕ', '🦁', '獅子'], ['ㄖ', '🌭', '熱狗'], ['ㄗ', '⚽', '足球'], ['ㄘ', '🍓', '草莓'],
+    ['ㄙ', '☂️', '雨傘', 1], ['ㄧ', '👕', '衣服'], ['ㄨ', '🐢', '烏龜'], ['ㄩ', '🐟', '魚'],
+  ];
+  const ROUNDS = 3;
+  const PASS_RANK = 3;      // 目標注音在 37 個符號中排前 3 名（小朋友空中寫字比較抖）
+  const PASS_SCORE = 4.2;   // 且形狀距離夠小；實測寫對約 0.3~2.1，寫錯通常 5 以上
+
+  const $ = id => document.getElementById(id);
+  const screen = $('duelScreen'), pad = $('pad'), video = $('cam'), cv = $('padCanvas'), cx = cv.getContext('2d');
+  const camStatus = $('camStatus'), feedback = $('feedback'), guide = $('guide');
+
+  let strokes = [], cur = null;          // 筆畫（座標為 0~1 的比例）
+  let rounds = [], round = 0, hp = ROUNDS, fails = 0, busy = false, onWin = null, open = false;
+  let landmarker = null, stream = null, lastVideoTime = -1, raf = 0;
+  const hand = { x: 0, y: 0, seen: false, mode: 'none', modeFrames: 0, hold: 0, holdKind: '' };
+
+  // ───────── 辨識器：把筆跡和字型渲染的注音比對（雙向 chamfer 距離） ─────────
+  const N = 64, PAD_PX = 8;
+  let templates = null;
+
+  function distanceTransform(bin) {
+    const INF = 1e9, d = new Float32Array(N * N);
+    for (let i = 0; i < N * N; i++) d[i] = bin[i] ? 0 : INF;
+    const D1 = 1, D2 = Math.SQRT2;
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const i = y * N + x; let v = d[i];
+      if (x > 0) v = Math.min(v, d[i - 1] + D1);
+      if (y > 0) { v = Math.min(v, d[i - N] + D1); if (x > 0) v = Math.min(v, d[i - N - 1] + D2); if (x < N - 1) v = Math.min(v, d[i - N + 1] + D2); }
+      d[i] = v;
+    }
+    for (let y = N - 1; y >= 0; y--) for (let x = N - 1; x >= 0; x--) {
+      const i = y * N + x; let v = d[i];
+      if (x < N - 1) v = Math.min(v, d[i + 1] + D1);
+      if (y < N - 1) { v = Math.min(v, d[i + N] + D1); if (x < N - 1) v = Math.min(v, d[i + N + 1] + D2); if (x > 0) v = Math.min(v, d[i + N - 1] + D2); }
+      d[i] = v;
+    }
+    return d;
+  }
+  function toShape(c) {
+    const data = c.getContext('2d').getImageData(0, 0, N, N).data;
+    const bin = new Uint8Array(N * N), pts = [];
+    for (let i = 0; i < N * N; i++) if (data[i * 4 + 3] > 100) { bin[i] = 1; pts.push(i); }
+    return { bin, pts, dt: distanceTransform(bin) };
+  }
+  // 把任意來源（bbox 範圍）等比例縮放置中到 N×N
+  function fitBox(minX, minY, w, h) {
+    const s = (N - PAD_PX * 2) / Math.max(w, h, 1e-6);
+    return { s, ox: N / 2 - (minX + w / 2) * s, oy: N / 2 - (minY + h / 2) * s };
+  }
+  function glyphShape(ch, font) {
+    const S = 220, big = document.createElement('canvas');
+    big.width = big.height = S;
+    const g = big.getContext('2d', { willReadFrequently: true });
+    g.font = font; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#000';
+    g.fillText(ch, S / 2, S / 2);
+    const data = g.getImageData(0, 0, S, S).data;
+    let x0 = S, y0 = S, x1 = 0, y1 = 0;
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (data[(y * S + x) * 4 + 3] > 128) {
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+    const c = document.createElement('canvas'); c.width = c.height = N;
+    const f = fitBox(x0, y0, x1 - x0 + 1, y1 - y0 + 1);
+    c.getContext('2d').drawImage(big, x0, y0, x1 - x0 + 1, y1 - y0 + 1, x0 * f.s + f.ox, y0 * f.s + f.oy, (x1 - x0 + 1) * f.s, (y1 - y0 + 1) * f.s);
+    return toShape(c);
+  }
+  const FONT = '400 170px "PingFang TC","Heiti TC","Noto Sans TC","Microsoft JhengHei",sans-serif';
+  function buildTemplates(font = FONT) {
+    templates = [...ZHUYIN].map(ch => ({ ch, ...glyphShape(ch, font) }));
+  }
+  function strokesShape(list, aspect) {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const s of list) for (const p of s) { const x = p.x * aspect; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); }
+    if (!isFinite(x0) || Math.max(x1 - x0, y1 - y0) < 0.06) return null;     // 太小
+    const c = document.createElement('canvas'); c.width = c.height = N;
+    const g = c.getContext('2d');
+    const f = fitBox(x0, y0, x1 - x0, y1 - y0);
+    g.lineWidth = 4.5; g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#000';
+    for (const s of list) {
+      g.beginPath();
+      s.forEach((p, i) => { const X = p.x * aspect * f.s + f.ox, Y = p.y * f.s + f.oy; i ? g.lineTo(X, Y) : g.moveTo(X, Y); });
+      if (s.length === 1) g.lineTo(s[0].x * aspect * f.s + f.ox + 0.1, s[0].y * f.s + f.oy);
+      g.stroke();
+    }
+    return toShape(c);
+  }
+  function compare(a, b) {
+    let s1 = 0, s2 = 0;
+    for (const i of a.pts) s1 += b.dt[i];
+    for (const i of b.pts) s2 += a.dt[i];
+    return s1 / Math.max(1, a.pts.length) + s2 / Math.max(1, b.pts.length);
+  }
+  function rank(shape) {
+    if (!templates) buildTemplates();
+    return templates.map(t => ({ ch: t.ch, score: compare(shape, t) })).sort((a, b) => a.score - b.score);
+  }
+
+  // ───────── 畫面 ─────────
+  function sizeCanvas() {
+    const r = pad.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2);
+    cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d);
+  }
+  addEventListener('resize', () => open && sizeCanvas());
+
+  function render() {
+    const W = cv.width, H = cv.height, u = W / 480;
+    cx.clearRect(0, 0, W, H);
+    cx.lineCap = 'round'; cx.lineJoin = 'round';
+    const all = cur ? [...strokes, cur] : strokes;
+    for (const pass of [[18 * u, 'rgba(255,190,80,.35)'], [8 * u, '#fffaeb']]) {
+      cx.lineWidth = pass[0]; cx.strokeStyle = pass[1];
+      for (const s of all) {
+        cx.beginPath();
+        s.forEach((p, i) => i ? cx.lineTo(p.x * W, p.y * H) : cx.moveTo(p.x * W, p.y * H));
+        if (s.length === 1) cx.lineTo(s[0].x * W + 0.1, s[0].y * H);
+        cx.stroke();
+      }
+    }
+    if (hand.seen) {
+      const x = hand.x * W, y = hand.y * H;
+      const col = hand.mode === 'pen' ? '#ffcf3f' : hand.mode === 'open' ? '#7ee081' : hand.mode === 'fist' ? '#ff7b7b' : '#cfd8e3';
+      cx.beginPath(); cx.arc(x, y, (hand.mode === 'pen' ? 9 : 13) * u, 0, Math.PI * 2);
+      cx.fillStyle = col; cx.globalAlpha = .9; cx.fill(); cx.globalAlpha = 1;
+      cx.lineWidth = 3 * u; cx.strokeStyle = '#3b2414'; cx.stroke();
+      if (hand.hold > 0) {           // 張手 / 握拳的倒數圈
+        cx.beginPath(); cx.arc(x, y, 26 * u, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, hand.hold));
+        cx.lineWidth = 6 * u; cx.strokeStyle = col; cx.stroke();
+      }
+    }
+  }
+
+  // ───────── 手勢 ─────────
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  function fingerUp(lm, tip, pip) { return dist(lm[tip], lm[0]) > dist(lm[pip], lm[0]) * 1.12; }
+  function classify(lm) {
+    const idx = fingerUp(lm, 8, 6), mid = fingerUp(lm, 12, 10), ring = fingerUp(lm, 16, 14), pinky = fingerUp(lm, 20, 18);
+    const n = idx + mid + ring + pinky;
+    if (idx && !mid && !ring) return 'pen';
+    if (n >= 4) return 'open';
+    if (n === 0) return 'fist';
+    return 'none';
+  }
+
+  function onHand(lm, dt) {
+    const tx = 1 - lm[8].x, ty = lm[8].y;          // 鏡像，像照鏡子一樣
+    const k = hand.seen ? 0.45 : 1;
+    hand.x += (tx - hand.x) * k; hand.y += (ty - hand.y) * k;
+    hand.seen = true;
+    const m = classify(lm);
+    if (m === hand.mode) hand.modeFrames++; else { hand.mode = m; hand.modeFrames = 0; }
+    const stable = hand.modeFrames >= 2;
+
+    if (hand.mode === 'pen' && stable && !busy) {
+      if (!cur) cur = [];
+      const last = cur[cur.length - 1];
+      if (!last || Math.hypot(last.x - hand.x, last.y - hand.y) > 0.004) cur.push({ x: hand.x, y: hand.y });
+    } else endStroke();
+
+    if ((hand.mode === 'open' || hand.mode === 'fist') && stable && !busy) {
+      if (hand.holdKind !== hand.mode) { hand.holdKind = hand.mode; hand.hold = 0; }
+      hand.hold += dt / 0.9;
+      if (hand.hold >= 1) {
+        hand.hold = 0; hand.holdKind = '';
+        if (hand.mode === 'open') submit(); else clearPad();
+        hand.modeFrames = -30;    // 動作完成後短暫冷卻
+      }
+    } else { hand.hold = 0; hand.holdKind = ''; }
+  }
+  function endStroke() {
+    if (cur && cur.length) strokes.push(cur);
+    cur = null;
+  }
+
+  let lastT = 0;
+  function loop(t) {
+    if (!open) return;
+    const dt = Math.min(0.1, (t - lastT) / 1000 || 0); lastT = t;
+    if (landmarker && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
+      lastVideoTime = video.currentTime;
+      try {
+        const res = landmarker.detectForVideo(video, t);
+        if (res.landmarks && res.landmarks.length) onHand(res.landmarks[0], dt);
+        else { hand.seen = false; hand.hold = 0; if (cur) endStroke(); }
+      } catch (e) { console.warn(e); }
+    }
+    render();
+    raf = requestAnimationFrame(loop);
+  }
+
+  // 手勢模型（約 8MB）在遊戲開始時就先在背景下載，走到大怪物時通常已經好了
+  let loading = null;
+  function preload() {
+    if (!loading) loading = (async () => {
+      const V = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+      const { FilesetResolver, HandLandmarker } = await import(V + '/vision_bundle.mjs');
+      const fileset = await FilesetResolver.forVisionTasks(V + '/wasm');
+      const opts = d => ({ baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task', delegate: d },
+                           runningMode: 'VIDEO', numHands: 1, minHandDetectionConfidence: 0.6, minTrackingConfidence: 0.5 });
+      try { return await HandLandmarker.createFromOptions(fileset, opts('GPU')); }
+      catch { return await HandLandmarker.createFromOptions(fileset, opts('CPU')); }
+    })();
+    return loading;
+  }
+
+  async function startCamera() {
+    camStatus.textContent = '正在開啟相機…';
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' }, audio: false });
+      video.srcObject = stream; await video.play();
+    } catch (e) {
+      camStatus.textContent = '沒有開啟相機，可以直接用滑鼠或手指在框裡寫字 ✍️';
+      return;
+    }
+    if (!landmarker) {
+      camStatus.textContent = '正在載入手勢辨識…（第一次需要幾秒鐘）';
+      try { landmarker = await preload(); }
+      catch (e) {
+        console.warn(e);
+        loading = null;
+        camStatus.textContent = '手勢辨識載入失敗（需要網路），可以用滑鼠或手指寫字 ✍️';
+        return;
+      }
+    }
+    camStatus.textContent = '把手舉到鏡頭前，伸出食指開始寫！';
+    setTimeout(() => { if (camStatus.textContent.startsWith('把手')) camStatus.textContent = ''; }, 4000);
+  }
+  function stopCamera() {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = null; video.srcObject = null;
+  }
+
+  // 滑鼠 / 觸控也能寫（沒有相機時的備案）
+  cv.addEventListener('pointerdown', e => {
+    if (busy) return;
+    cv.setPointerCapture(e.pointerId);
+    const r = cv.getBoundingClientRect();
+    cur = [{ x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height }];
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!cur || hand.seen) return;
+    const r = cv.getBoundingClientRect();
+    cur.push({ x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height });
+  });
+  const up = () => { if (!hand.seen) endStroke(); };
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+
+  // ───────── 題目流程 ─────────
+  function speak(text) {
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'zh-TW'; u.rate = 0.85;
+      const v = speechSynthesis.getVoices().find(v => v.lang === 'zh-TW');
+      if (v) u.voice = v;
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  function showHp() {
+    $('bossHp').innerHTML = Array.from({ length: ROUNDS }, (_, i) => `<span class="${i < hp ? '' : 'lost'}">❤️</span>`).join('');
+  }
+  function showRound() {
+    const [ch, emoji, word, pos = 0] = rounds[round];
+    $('pEmoji').textContent = emoji;
+    $('pWord').textContent = word;
+    $('pText').innerHTML = `寫出「<mark>${word[pos]}</mark>」的第一個注音`;
+    guide.textContent = ch; guide.classList.remove('show');
+    fails = 0;
+    setFeedback(`第 ${round + 1} 題`, '');
+    clearPad();
+    setTimeout(() => speak(word), 300);
+  }
+  function setFeedback(text, cls) { feedback.textContent = text; feedback.className = 'feedback ' + cls; }
+  function clearPad() { strokes = []; cur = null; }
+
+  function submit() {
+    if (busy) return;
+    endStroke();
+    if (!strokes.length) { setFeedback('先寫一個注音喔！', 'bad'); return; }
+    const shape = strokesShape(strokes, cv.width / cv.height);
+    if (!shape) { setFeedback('寫大一點點喔！', 'bad'); return; }
+    const target = rounds[round][0];
+    const ranking = rank(shape);
+    const r = ranking.findIndex(x => x.ch === target);
+    window.__duelLast = ranking.slice(0, 5);
+    if (r < PASS_RANK && ranking[r].score <= PASS_SCORE) {
+      busy = true;
+      hp--; showHp();
+      const bc = $('duelBoss'); bc.classList.remove('hit'); void bc.offsetWidth; bc.classList.add('hit');
+      setFeedback(`答對了！「${target}」⚡ 魔法命中！`, 'ok');
+      speak('答對了');
+      setTimeout(() => {
+        busy = false;
+        if (hp <= 0) finish(); else { round++; showRound(); }
+      }, 1600);
+    } else {
+      fails++;
+      setFeedback(fails >= 2 ? '看看提示，照著寫寫看！' : `看起來像「${ranking[0].ch}」，再試一次！`, 'bad');
+      if (fails >= 2) guide.classList.add('show');
+      clearPad();
+    }
+  }
+
+  function finish() {
+    close();
+    onWin && onWin();
+  }
+  function close() {
+    open = false;
+    cancelAnimationFrame(raf);
+    stopCamera();
+    screen.classList.add('hidden');
+  }
+
+  $('submitBtn').addEventListener('click', submit);
+  $('clearBtn').addEventListener('click', () => { clearPad(); setFeedback('', ''); });
+  $('hintBtn').addEventListener('click', () => guide.classList.toggle('show'));
+  $('speakBtn').addEventListener('click', () => speak(rounds[round][2]));
+
+  return {
+    open(bossImg, win) {
+      onWin = win; open = true; busy = false;
+      const pool = [...WORDS].sort(() => Math.random() - 0.5);
+      rounds = pool.slice(0, ROUNDS); round = 0; hp = ROUNDS;
+      screen.classList.remove('hidden');
+      const bc = $('duelBoss'), bg = bc.getContext('2d');
+      bg.clearRect(0, 0, bc.width, bc.height);
+      if (bossImg) bg.drawImage(bossImg, 0, 0, bc.width, bc.height);
+      sizeCanvas(); showHp(); showRound();
+      if (!templates) setTimeout(buildTemplates, 0);
+      startCamera();
+      lastT = performance.now();
+      raf = requestAnimationFrame(loop);
+    },
+    preload() { preload().then(l => { landmarker = l; }).catch(() => { loading = null; }); setTimeout(() => templates || buildTemplates(), 500); },
+    // 測試用
+    _test: { buildTemplates, glyphShape, rank, strokesShape, ZHUYIN, submit, get strokes() { return strokes; }, set strokes(v) { strokes = v; } },
+  };
+})();
+</script>
+</body>
+</html>
