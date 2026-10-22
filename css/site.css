@@ -117,7 +117,7 @@ img.px, canvas.px, .nav .brand img { image-rendering: pixelated; image-rendering
 .ruby .zy { font-weight: normal; }
 
 /* 各頁面的方框也套用像素外框（首頁、教材、學習單、遊戲） */
-details, .bdg, .today .sym, .pond, .timeline, .speech, .story .pic .pg,
+details, .bdg, .today .sym, .pond, .timeline, .speech,
 .glyph, .pad, .symlist button, .units-bar button, .units-bar a, .modes button.mode, .tip, .gest,
 .sheet, .know > div, .opt, .match .item, .q,
 .pill, .home, .toast, .duel, .sbtn, .touch button, .prompt, .gesture {

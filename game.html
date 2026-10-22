@@ -10,7 +10,7 @@
   body { background-image: none; font-family: var(--font); user-select: none; -webkit-user-select: none; touch-action: none; }
   canvas#game { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; image-rendering: crisp-edges; }
 
-  .hud { position: fixed; top: 14px; left: 16px; display: flex; flex-wrap: wrap; gap: 10px; pointer-events: none; max-width: calc(100vw - 190px); }
+  .hud { position: fixed; top: 14px; left: 16px; display: flex; flex-wrap: wrap; gap: 10px; pointer-events: none; max-width: calc(100vw - 320px); }
   .pill { background: rgba(255,250,235,.92); border: 3px solid #3b2414; border-radius: 999px; padding: 6px 16px;
           font-size: 20px; font-weight: 800; color: #3b2414; box-shadow: 0 3px 0 #3b2414; display: flex; align-items: center; gap: 6px; }
   .pill b { color: #d0552b; }
@@ -27,9 +27,31 @@
   .bestiary b { display: block; font-size: 14px; }
   .bestiary .no { color: #c0392b; } .bestiary .ok { color: #2e9d4a; }
   .card { max-height: 94vh; overflow: auto; }
+  #startScreen .card { max-width: min(700px, 94vw); padding: 22px 26px; }
+  .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0 8px; }
+  .lv { font: inherit; cursor: pointer; background: #fff; color: #3b2414; text-align: left; padding: 10px 12px; margin: 4px; position: relative;
+        box-shadow: 0 -4px 0 #3b2414, 0 4px 0 #3b2414, -4px 0 0 #3b2414, 4px 0 0 #3b2414, 6px 6px 0 rgba(59,36,20,.28); border: none; }
+  .lv:hover:not(:disabled) { background: #fff3d6; }
+  .lv:active:not(:disabled) { transform: translateY(2px); }
+  .lv .no { display: inline-block; color: #fff; padding: 0 8px; margin-right: 6px; font-size: 15px; }
+  .lv b { font-size: 18px; }
+  .lv small { display: block; font-size: 13px; opacity: .75; margin: 2px 0; line-height: 1.35; }
+  .lv .st { font-size: 15px; letter-spacing: 1px; }
+  .lv:disabled { cursor: default; background: #ece3d2; color: #9a8a78; }
+  .lv:disabled::after { content: "🔒"; position: absolute; right: 8px; top: 6px; }
+  .lv.next { background: #fff1de; }
+  details.dex { margin-top: 8px; text-align: left; }
+  details.dex summary { cursor: pointer; font-size: 16px; text-align: center; }
+  .clear-stars { font-size: 46px; letter-spacing: 6px; margin: 4px 0; }
+  .btn-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+  .btn-row .btn { margin-top: 0; font-size: 18px; padding: 8px 20px; }
+  .btn.ghost { background: #fff; color: #3b2414; }
+  .lvl-btn { position: fixed; top: 14px; right: 150px; z-index: 5; font: inherit; font-size: 18px; color: #3b2414; background: rgba(255,250,235,.92);
+             padding: 6px 14px; border: none; cursor: pointer; }
+  @media (max-width: 640px) { .levels { grid-template-columns: repeat(2, 1fr); } .lvl-btn { right: 130px; } }
   .gem-icon { width: 16px; height: 20px; background: #4fc3f7; border: 2.5px solid #3b2414; clip-path: polygon(50% 0, 100% 35%, 50% 100%, 0 35%); }
 
-  .overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(40,90,130,.35); }
+  .overlay { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; background: rgba(40,90,130,.35); }
   .overlay.hidden { display: none; }
   .overlay.danger { background: rgba(60,20,30,.45); }
   .card { background: #fffaeb; border: 5px solid #3b2414; border-radius: 28px; padding: 28px 40px; text-align: center;
@@ -45,7 +67,7 @@
 
   .home { position: fixed; top: 14px; right: 16px; text-decoration: none; background: rgba(255,250,235,.92); border: 3px solid #3b2414;
           border-radius: 999px; padding: 6px 16px; font-size: 18px; font-weight: 800; color: #3b2414; box-shadow: 0 3px 0 #3b2414; z-index: 5; }
-  .toast { position: fixed; top: 76px; left: 50%; transform: translateX(-50%); background: #fffaeb; border: 4px solid #3b2414; border-radius: 18px;
+  .toast { position: fixed; z-index: 6; top: 130px; left: 50%; transform: translateX(-50%); background: #fffaeb; border: 4px solid #3b2414; border-radius: 18px;
            padding: 8px 22px; font-size: 22px; font-weight: 800; color: #3b2414; box-shadow: 0 4px 0 #3b2414; pointer-events: none;
            opacity: 0; transition: opacity .3s; white-space: nowrap; }
   .toast.show { opacity: 1; }
@@ -99,6 +121,7 @@
 <canvas id="game"></canvas>
 
 <div class="hud">
+  <div class="pill" id="levelPill">第 1 關</div>
   <div class="pill hearts" id="hearts"></div>
   <div class="pill">距離 <b id="dist">0</b> 公尺</div>
   <div class="pill"><span class="gem-icon"></span>寶石 <b id="gems">0</b></div>
@@ -107,15 +130,29 @@
 </div>
 <div class="toast" id="toast"></div>
 <a class="home" href="index.html">🏠 回首頁</a>
+<button class="lvl-btn pixel-frame" id="lvlBtn">🗺️ 選關卡</button>
 
 <div class="overlay" id="startScreen">
   <div class="card">
     <h1>小簡的注音大冒險</h1>
-    <p>先來小試身手！跳過小怪物、收集寶石，<br>一路往前走找到大怪物吧！</p>
+    <p>選一個關卡出發！走到終點打敗大怪物就過關，<br>過關會解鎖下一關。</p>
     <p><kbd>←</kbd> <kbd>→</kbd> 移動　<kbd>空白鍵</kbd> / <kbd>↑</kbd> 跳躍　<kbd>X</kbd> 魔法</p>
     <p style="font-size:15px;opacity:.8">❤️ 有 3 顆愛心　❓ 從下面頂問號方塊　🪄 拿到魔杖可以發射魔法　🚩 碰到旗子會存檔　🍄 彈簧蘑菇跳很高</p>
-    <div class="bestiary" id="bestiary"></div>
-    <button class="btn" id="startBtn">開始冒險</button>
+    <div class="levels" id="levels"></div>
+    <details class="dex"><summary>👾 怪物圖鑑（點開看看）</summary><div class="bestiary" id="bestiary"></div></details>
+  </div>
+</div>
+
+<div class="overlay hidden" id="clearScreen">
+  <div class="card">
+    <h1 id="clearTitle">過關！</h1>
+    <div class="clear-stars" id="clearStars"></div>
+    <p id="clearInfo"></p>
+    <div class="btn-row">
+      <button class="btn ghost" id="againBtn">↺ 再玩一次</button>
+      <button class="btn ghost" id="mapBtn">🗺️ 選關卡</button>
+      <button class="btn" id="nextBtn">下一關 ▶</button>
+    </div>
   </div>
 </div>
 
@@ -178,7 +215,26 @@
   const BIOME_LEN = 4200;           // 每個場景的長度，草地 / 沙灘交替
   const BOSS_AT = 4600;             // 小試身手區段長度（約 92 公尺）後出現大怪物
   const G = 2100, JUMP_V = 820, MAX_VX = 290, ACCEL = 2400, FRICTION = 2600, AIR_ACCEL = 1700;
-  const COYOTE = 0.1, BUFFER = 0.13;
+  const COYOTE = 0.14, BUFFER = 0.16;          // 稍微寬鬆：離開台階後一小段時間還能跳、早按跳也算
+  const EDGE = 12;                               // 台階邊緣寬容度：腳只踩到一點點邊也站得住
+  const STEP_UP = 24;                            // 差一點點高度的台階，走過去會自動踩上去
+
+  // ───────── 關卡 ─────────
+  // enemies：[種類, 出現比重]；symbols：大怪物對決會考的注音（空字串 = 全部）
+  const LEVELS = [
+    { id: 1, name: '草原小路', desc: '新手村：踩小怪物、頂問號方塊', biome: 'grass', length: 3800, boss: 'dragon',
+      enemies: [['minion', 1], ['slime', .7]], symbols: 'ㄅㄆㄇㄈㄉㄊㄋㄌ', units: '單元 1–2' },
+    { id: 2, name: '海邊沙灘', desc: '小心坑洞上的蝙蝠，踩彈簧跳高高', biome: 'beach', length: 4600, boss: 'octopus', spikes: true, springs: true,
+      enemies: [['minion', .7], ['slime', .8], ['bat', 1]], symbols: 'ㄍㄎㄏㄐㄑㄒ', units: '單元 3–4' },
+    { id: 3, name: '黃昏草原', desc: '刺刺球和生氣方塊出現了', biome: 'grass', tint: 'dusk', length: 5200, boss: 'dragon', spikes: true, springs: true,
+      enemies: [['slime', .8], ['bat', .8], ['spike', .9], ['block', .8]], symbols: 'ㄓㄔㄕㄖㄗㄘㄙ', units: '單元 5–6' },
+    { id: 4, name: '月光海灘', desc: '害羞幽靈只怕魔法，先拿魔杖！', biome: 'beach', tint: 'night', length: 5800, boss: 'octopus', spikes: true, springs: true,
+      enemies: [['bat', 1], ['spike', .7], ['block', .5], ['ghost', 1]], symbols: 'ㄧㄨㄩㄅㄉㄍㄐㄓㄗ', units: '單元 7＋複習' },
+    { id: 5, name: '注音大魔王', desc: '所有怪物都來了！', biome: 'alt', tint: 'night', length: 6600, boss: 'octopus', spikes: true, springs: true,
+      enemies: [['minion', .5], ['slime', .8], ['bat', 1], ['spike', .9], ['block', .8], ['ghost', .9]], symbols: '', units: '全部複習' },
+    { id: 6, name: '無盡冒險', desc: '一直往前走，大怪物輪流出現', biome: 'alt', length: BOSS_AT, endless: true, spikes: true, springs: true, symbols: '', units: '全部' },
+  ];
+  let level = LEVELS[0];
   const ZHUYIN = 'ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄧㄨㄩㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦ';
   const GEM_COLORS = [['#ff6b81', '#c2185b'], ['#4fc3f7', '#1976d2'], ['#7ee081', '#2e9d4a'], ['#c792ea', '#7b3fbf'], ['#ffd54f', '#e09a00']];
 
@@ -207,7 +263,7 @@
              body: '#e2a64c', bodyDark: '#c4842f', cap: '#f8e39a', capDark: '#e9c46a', stone: '#f3cf7d', line: '#4a2c12' },
   };
   const BIOME_ORDER = ['grass', 'beach'];
-  const biomeAt = x => BIOME_ORDER[Math.floor(Math.max(0, x) / BIOME_LEN) % BIOME_ORDER.length];
+  const biomeAt = x => level.biome !== 'alt' ? level.biome : BIOME_ORDER[Math.floor(Math.max(0, x) / BIOME_LEN) % BIOME_ORDER.length];
 
   const IMG = { player: null, boss: null, minion: null, fire: null, tiles: null, chars: null, octo: null, slime: null, ghost: null, ghostShy: null, wand: null };
 
@@ -436,12 +492,14 @@
   }
   // 越往前走，出現的怪物種類越多
   function pickEnemy(seg, meters, afterBoss) {
-    const pool = [['minion', 1]];
-    if (meters > 12) pool.push(['slime', 1]);
-    if (meters > 25) pool.push(['bat', .9]);
-    if (meters > 40) pool.push(['spike', .7]);
-    if (meters > 55) pool.push(['block', .6]);
-    if (afterBoss) pool.push(['ghost', .7]);
+    const pool = level.endless ? [['minion', 1]] : level.enemies.slice();
+    if (level.endless) {
+      if (meters > 12) pool.push(['slime', 1]);
+      if (meters > 25) pool.push(['bat', .9]);
+      if (meters > 40) pool.push(['spike', .7]);
+      if (meters > 55) pool.push(['block', .6]);
+      if (afterBoss) pool.push(['ghost', .7]);
+    }
     const ok = pool.filter(([t]) => !(ENEMY[t].walker && seg.w < 260) && !(t === 'block' && seg.w < 180));
     let r = Math.random() * ok.reduce((a, [, w]) => a + w, 0);
     for (const [t, w] of ok) if ((r -= w) <= 0) return t;
@@ -462,11 +520,13 @@
   function resetWorld() {
     platforms = []; items = []; enemies = []; particles = []; popups = []; flames = [];
     qblocks = []; springs = []; spikes = []; decos = []; flags = []; bolts = [];
-    gen = { x: 900, y: 420, zhuyinFrom: Infinity, nextBossAt: BOSS_AT, bossCount: 0, nextFlagAt: 1800 };
+    gen = { x: 900, y: 420, zhuyinFrom: Infinity, nextBossAt: level.length, bossCount: 0, nextFlagAt: Math.min(1800, level.length * 0.45) };
     const start = addPlatform(-400, 420, 1300, false);       // 起點平地
     decorate(start);
     decos.push({ tile: TILE.sign, x: 170, y: 420 - KS + 4, size: KS });
     addItemRow(420, 360, 3);
+    if (!level.endless && level.enemies.some(([t]) => t === 'ghost'))      // 有幽靈的關卡，一開始送一支魔杖
+      items.push({ kind: 'wand', x: 720, y: 360, t: 0 });
     boss = null; checkpoint = { x: 60, y: 420 };
   }
 
@@ -474,14 +534,14 @@
   function placeBoss() {
     const ay = clamp(gen.y, 380, 440);
     const arena = addPlatform(gen.x, ay, 1150, false);
-    const kind = gen.bossCount % 2 === 0 ? 'dragon' : 'octopus';
+    const kind = level.endless ? (gen.bossCount % 2 === 0 ? 'dragon' : 'octopus') : level.boss;
     const h = 230, w = kind === 'dragon' ? h * 447 / 520 : h;
     boss = { kind, img: kind === 'dragon' ? IMG.boss : IMG.octo, x: arena.x + 760, y: ay - h, w, h, state: 'idle', t: 0, hit: 0 };
     flags.push({ x: arena.x + 160, y: ay, on: false, t: 0 });     // 打怪前存檔
     gen.x = arena.x + arena.w;
     gen.y = ay;
-    if (gen.zhuyinFrom === Infinity) gen.zhuyinFrom = boss.x + w;   // 第一隻大怪物之後開始出現注音
-    gen.nextBossAt = gen.x + 5200;                                   // 約 100 公尺後再出現下一隻
+    if (level.endless && gen.zhuyinFrom === Infinity) gen.zhuyinFrom = boss.x + w;   // 無盡模式：第一隻大怪物之後開始出現注音
+    gen.nextBossAt = level.endless ? gen.x + 5200 : Infinity;          // 關卡模式只有終點一隻
     gen.nextFlagAt = gen.x + 1700;
     gen.bossCount++;
   }
@@ -500,7 +560,7 @@
         addPlatform(fx, fy, fw, true);
         addItemRow(fx + fw / 2 - 19, fy - 50, 2);
         gen.lastFloatY = fy;
-        if (fx > 1300 && chance(.35)) {                        // 坑洞上空有蝙蝠
+        if (fx > 1300 && chance(.35) && (level.endless || level.enemies.some(([t]) => t === 'bat'))) {   // 坑洞上空有蝙蝠
           const e = addEnemy('bat', { x: fx - 60, y: fy + 40, w: fw + 120 });
           e.baseY = fy - 150;
         }
@@ -531,7 +591,7 @@
         const t = pickEnemy(seg, meters, afterBoss);
         if (t) { addEnemy(t, seg); busy = true; }
       }
-      if (!busy && meters > 35 && gw > 400 && chance(.25)) {   // 尖刺陷阱：放在中間，兩邊留路
+      if (!busy && level.spikes && meters > (level.endless ? 35 : 15) && gw > 400 && chance(.25)) {   // 尖刺陷阱：放在中間，兩邊留路
         const n = randi(1, 2);
         spikes.push({ x: gx + gw / 2 - n * KS / 2, y: ny - KS, w: n * KS, h: KS });
       }
@@ -563,7 +623,7 @@
         const n = gw > 300 && chance(.4) ? 2 : 1;
         const bx = gx + rand(40, gw - 40 - n * KS);
         for (let i = 0; i < n; i++) qblocks.push({ x: bx + i * KS, y: ny - 195, w: KS, h: KS, used: false, bump: 0, floating: true });
-      } else if (!floatingHere && meters > 18 && gw > 230 && chance(.2)) {
+      } else if (!floatingHere && level.springs && meters > 12 && gw > 230 && chance(.2)) {
         // 彈簧蘑菇 + 高空獎勵台
         const sx = gx + gw * 0.3;
         springs.push({ x: sx, y: ny - KS, w: KS, h: KS, squash: 0 });
@@ -602,7 +662,8 @@
   const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'jump', KeyW: 'jump', Space: 'jump', KeyX: 'magic', KeyK: 'magic' };
   addEventListener('keydown', e => {
     const k = KEYMAP[e.code];
-    if (state === 'start' && (k || e.code === 'Enter')) { e.preventDefault(); startGame(); return; }
+    if (state === 'start') { if (e.code === 'Enter') { e.preventDefault(); startGame(); } return; }
+    if (state === 'clear') { if (e.code === 'Enter') { e.preventDefault(); document.getElementById(document.getElementById('nextBtn').hidden ? 'againBtn' : 'nextBtn').click(); } return; }
     if (state === 'boss-wait' && e.code === 'Enter') { startChallenge(); return; }
     if (!k) return;
     e.preventDefault();
@@ -615,7 +676,7 @@
 
   document.querySelectorAll('.touch button').forEach(btn => {
     const k = btn.dataset.key;
-    const down = e => { e.preventDefault(); if (state === 'start') startGame(); if (k === 'jump' && !keys.jump) jumpPressed = true; if (k === 'magic') magicPressed = true; keys[k] = true; btn.classList.add('on'); };
+    const down = e => { e.preventDefault(); if (k === 'jump' && !keys.jump) jumpPressed = true; if (k === 'magic') magicPressed = true; keys[k] = true; btn.classList.add('on'); };
     const up = e => { e.preventDefault(); keys[k] = false; btn.classList.remove('on'); };
     btn.addEventListener('pointerdown', down);
     btn.addEventListener('pointerup', up);
@@ -627,12 +688,12 @@
   // start → play → boss-intro（怪物吼叫）→ boss-wait（挑戰視窗）→ play（打敗後進入注音區）
   let state = 'start';
   const cam = { x: -60, shake: 0 };
-  let gemCount = 0, coinCount = 0, bestX = 0;
+  let gemCount = 0, coinCount = 0, bestX = 0, hitsTaken = 0;
   const magicPill = document.getElementById('magicPill'), magicT = document.getElementById('magicT'), magicBtn = document.querySelector('.touch .magic');
   const distEl = document.getElementById('dist'), gemEl = document.getElementById('gems'), coinEl = document.getElementById('coins');
   const startScreen = document.getElementById('startScreen'), bossScreen = document.getElementById('bossScreen');
   const toastEl = document.getElementById('toast');
-  document.getElementById('startBtn').addEventListener('click', startGame);
+  const clearScreen = document.getElementById('clearScreen');
   document.getElementById('challengeBtn').addEventListener('click', startChallenge);
 
   let toastTimer = 0;
@@ -641,18 +702,79 @@
     clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('show'), sec * 1000);
   }
 
-  function startGame() {
-    if (state !== 'start') return;
-    state = 'play';
-    startScreen.classList.add('hidden');
-    window.ZhuyinDuel.preload();
+  // ───────── 關卡選單、過關 ─────────
+  const loadLevels = () => window.ZhuyinProgress ? ZhuyinProgress.load('zhuyin-levels') : {};
+  const unlocked = (lv, rec) => lv.id === 1 || !!rec[lv.endless ? 1 : lv.id - 1];
+  function renderLevels() {
+    const rec = loadLevels();
+    const next = LEVELS.find(lv => !lv.endless && !rec[lv.id] && unlocked(lv, rec));
+    const COL = ['#5aa836', '#3d8fd1', '#f08a3c', '#7b5cc4', '#c0392b', '#3b2414'];
+    document.getElementById('levels').innerHTML = LEVELS.map((lv, i) => {
+      const st = rec[lv.id] ? rec[lv.id].stars : 0, open = unlocked(lv, rec);
+      return `<button class="lv ${lv === next ? 'next' : ''}" data-id="${lv.id}" ${open ? '' : 'disabled'}>
+        <span class="no" style="background:${COL[i]}">${lv.endless ? '∞' : lv.id}</span><b>${lv.name}</b>
+        <small>${open ? lv.desc : (lv.endless ? '完成第 1 關解鎖' : '完成上一關解鎖')}</small>
+        <small>🔤 ${lv.units}</small>
+        <span class="st">${lv.endless ? (rec.endlessBest ? `最遠 ${rec.endlessBest} 公尺` : '') : '⭐'.repeat(st) + '☆'.repeat(3 - st)}</span></button>`;
+    }).join('');
   }
+  document.getElementById('levels').addEventListener('click', e => {
+    const b = e.target.closest('.lv'); if (b && !b.disabled) startLevel(+b.dataset.id);
+  });
+  function showLevelSelect() {
+    state = 'start';
+    keys.left = keys.right = keys.jump = false;
+    clearScreen.classList.add('hidden'); bossScreen.classList.add('hidden');
+    renderLevels();
+    startScreen.classList.remove('hidden');
+  }
+  function startLevel(id) {
+    level = LEVELS.find(lv => lv.id === id) || LEVELS[0];
+    resetWorld(); resetPlayer(); renderHearts();
+    cam.x = -60; cam.shake = 0;
+    gemCount = 0; coinCount = 0; bestX = 0; hitsTaken = 0;
+    document.getElementById('zhuyinPill').classList.add('hidden');
+    document.getElementById('levelPill').textContent = level.endless ? '∞ 無盡冒險' : `第 ${level.id} 關 ${level.name}`;
+    generateUntil(viewW + 1200);
+    startScreen.classList.add('hidden'); clearScreen.classList.add('hidden');
+    state = 'play';
+    window.ZhuyinDuel.preload();
+    toast(level.endless ? '無盡冒險開始！走得越遠越厲害' : `第 ${level.id} 關：${level.name}，走到終點打敗大怪物！`, 2.4);
+  }
+  function startGame() {           // 按 Enter：開始下一個還沒過的關卡
+    const rec = loadLevels();
+    const lv = LEVELS.find(l => !l.endless && !rec[l.id] && unlocked(l, rec)) || LEVELS[0];
+    startLevel(lv.id);
+  }
+  function levelClear() {
+    state = 'clear';
+    const stars = hitsTaken === 0 ? 3 : hitsTaken <= 2 ? 2 : 1;
+    const rec = ZhuyinProgress.update('zhuyin-levels', r => {
+      if (!r[level.id] || r[level.id].stars < stars) r[level.id] = { stars, gems: gemCount };
+    });
+    document.getElementById('clearTitle').textContent = `第 ${level.id} 關 過關！`;
+    document.getElementById('clearStars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+    document.getElementById('clearInfo').innerHTML = `收集寶石 ${gemCount} 顆・受傷 ${hitsTaken} 次<br>` +
+      (stars === 3 ? '完美過關，一次都沒受傷！' : '不受傷過關可以拿到 3 顆星喔！');
+    const next = LEVELS.find(lv => lv.id === level.id + 1);
+    document.getElementById('nextBtn').hidden = !next;
+    if (next) document.getElementById('nextBtn').textContent = next.endless ? '無盡冒險 ▶' : `第 ${next.id} 關 ▶`;
+    clearScreen.classList.remove('hidden');
+  }
+  document.getElementById('againBtn').addEventListener('click', () => startLevel(level.id));
+  document.getElementById('mapBtn').addEventListener('click', showLevelSelect);
+  document.getElementById('nextBtn').addEventListener('click', () => startLevel(level.id + 1));
+  document.getElementById('lvlBtn').addEventListener('click', () => {
+    if (state === 'duel') return;
+    if (level.endless) ZhuyinProgress.update('zhuyin-levels', r => { r.endlessBest = Math.max(r.endlessBest || 0, Math.floor(bestX / 50)); });
+    showLevelSelect();
+  });
 
   function startChallenge() {
     if (state !== 'boss-wait') return;
     bossScreen.classList.add('hidden');
     state = 'duel';
-    window.ZhuyinDuel.open(boss.img, () => defeatBoss());
+    window.ZhuyinDuel.open(boss.img, () => defeatBoss(), level.symbols);
   }
 
   function saveGameRecord(extra = 0) {
@@ -672,8 +794,9 @@
     for (let i = 0; i < 24; i++) particles.push({ x: boss.x + boss.w / 2, y: boss.y + boss.h / 2, vx: rand(-320, 320), vy: rand(-420, -60), t: 0, life: .9, star: true });
     state = 'play';
     document.getElementById('zhuyinPill').classList.remove('hidden');
-    toast(gen.bossCount > 1 ? '又打敗一隻大怪物了！繼續往前冒險！' : '打敗大怪物了！接下來收集注音符號吧！', 3);
     player.hp = MAX_HP; renderHearts();
+    if (!level.endless) { setTimeout(levelClear, 1600); return; }
+    toast(gen.bossCount > 1 ? '又打敗一隻大怪物了！繼續往前冒險！' : '打敗大怪物了！接下來收集注音符號吧！', 3);
   }
 
   // ───────── 愛心、受傷、存檔點 ─────────
@@ -685,7 +808,7 @@
   function hurt(fromX) {
     const p = player;
     if (p.blink > 0 || state !== 'play') return;
-    p.hp--; renderHearts(p.hp);
+    p.hp--; hitsTaken++; renderHearts(p.hp);
     const away = Math.sign((p.x + P_W / 2) - fromX) || -1;
     p.vx = away * 300; p.vy = -480; p.bounce = true; p.onGround = false; p.blink = 1.5;
     cam.shake = 0.2;
@@ -758,6 +881,8 @@
     for (const b of platforms) {
       if (b.floating) continue;
       if (overlap(p.x, p.y, P_W, P_H, b)) {
+        // 只差一點點高度：自動踩上去，不會被卡住
+        if (p.y + P_H - b.y <= STEP_UP && p.vy >= -120) { p.y = b.y - P_H; if (p.vy > 0) p.vy = 0; continue; }
         if (p.vx > 0 || p.x + P_W / 2 < b.x + b.w / 2) p.x = b.x - P_W; else p.x = b.x + b.w;
         p.vx = 0;
       }
@@ -775,13 +900,10 @@
     const wasGround = p.onGround;
     p.onGround = false;
     for (const b of platforms) {
-      if (p.x + P_W <= b.x + 2 || p.x >= b.x + b.w - 2) continue;
-      if (b.floating) {
-        if (p.vy >= 0 && prevBottom <= b.y + 1 && p.y + P_H >= b.y) land(b);   // 單向台階
-      } else if (overlap(p.x, p.y, P_W, P_H, b)) {
-        if (p.vy >= 0 && prevBottom <= b.y + 12) land(b);
-        else if (p.vy < 0) { p.y = b.y + b.h; p.vy = 0; }
-      }
+      // 寬鬆判定：腳超出台階邊緣 EDGE 以內也算踩到；稍微低於台階頂端也會被拉上來
+      if (p.x + P_W <= b.x - EDGE || p.x >= b.x + b.w + EDGE) continue;
+      if (p.vy >= 0 && prevBottom <= b.y + (b.floating ? 18 : 24) && p.y + P_H >= b.y) { land(b); continue; }
+      if (!b.floating && p.vy < 0 && overlap(p.x, p.y, P_W, P_H, b)) { p.y = b.y + b.h; p.vy = 0; }
     }
     for (const b of qblocks) {
       if (!overlap(p.x + 4, p.y, P_W - 8, P_H, b)) continue;
@@ -805,7 +927,7 @@
         .sort((a, b) => Math.abs(Math.max(a.x + 10, minX) - p.safeX) - Math.abs(Math.max(b.x + 10, minX) - p.safeX))[0];
       p.x = Math.min(Math.max(g.x + 10, minX, p.safeX), g.x + g.w - P_W - 10);
       p.y = g.y - P_H; p.vx = 0; p.vy = 0; p.blink = 1.2; p.onGround = true; p.ground = g;
-      p.hp--; renderHearts(p.hp);
+      p.hp--; hitsTaken++; renderHearts(p.hp);
       if (p.hp <= 0) knockOut();
     }
 
@@ -943,13 +1065,7 @@
       if (c.baseY !== undefined) { c.rise = Math.min(1, c.rise + dt * 4); c.y = c.baseY + 30 * (1 - c.rise); }
       if (Math.abs(c.x - (p.x + P_W / 2)) < 34 && Math.abs(c.y - (p.y + P_H / 2)) < 46) {
         c.got = true;
-        if (c.kind === 'heart') { drawTile(TILE.heart, c.x - 20, y - 20, 40); continue; }
-      if (c.kind === 'wand') {
-        ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(c.x, y); ctx.rotate(Math.sin(c.t * 3) * 0.3);
-        if (IMG.wand) ctx.drawImage(IMG.wand, -20, -20, 40, 40);
-        ctx.restore(); continue;
-      }
-      if (c.kind === 'gem') { gemCount++; popups.push({ x: c.x, y: c.y, text: '+1', t: 0, small: true }); }
+        if (c.kind === 'gem') { gemCount++; popups.push({ x: c.x, y: c.y, text: '+1', t: 0, small: true }); }
         else if (c.kind === 'heart') { p.hp = Math.min(MAX_HP, p.hp + 1); renderHearts(); popups.push({ x: c.x, y: c.y, text: '❤', t: 0 }); }
         else if (c.kind === 'wand') { p.magic = MAGIC_TIME; toast('🪄 拿到魔杖！按 X 發射魔法，什麼怪物都打得倒', 2.6); }
         else { coinCount++; popups.push({ x: c.x, y: c.y, text: c.ch, t: 0 }); }
@@ -1030,6 +1146,25 @@
     const fade = clamp((frac - 0.9) / 0.1, 0, 1);
     drawBiomeBg(cur, 1);
     if (fade > 0) drawBiomeBg(nxt, fade);
+    if (level.tint === 'dusk') {
+      const g = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+      g.addColorStop(0, 'rgba(255,90,90,.62)'); g.addColorStop(.45, 'rgba(255,150,60,.5)'); g.addColorStop(.8, 'rgba(255,190,90,.3)'); g.addColorStop(1, 'rgba(120,40,60,.2)');
+      ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = 'rgb(255,190,150)'; ctx.fillRect(0, 0, viewW + 2, VIEW_H);
+      ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = g; ctx.fillRect(0, 0, viewW + 2, VIEW_H);
+      ctx.fillStyle = '#ffd27a'; ctx.fillRect(viewW - 190, 250, 70, 70); ctx.fillStyle = '#ffb35c'; ctx.fillRect(viewW - 182, 258, 54, 54);   // 夕陽
+    } else if (level.tint === 'night') {
+      ctx.fillStyle = 'rgba(14,20,62,.6)'; ctx.fillRect(0, 0, viewW + 2, VIEW_H);
+      ctx.fillStyle = '#fffbe0';                                          // 星星（跟著遠景慢慢移動）
+      for (let i = 0; i < 40; i++) {
+        const sx = ((i * 197 + 53) % 997) / 997 * (viewW + 200) - (cam.x * 0.05) % (viewW + 200);
+        const sy = ((i * 131 + 17) % 389) / 389 * 260;
+        const tw = (Math.sin(performance.now() / 400 + i) + 1) / 2;
+        const r = i % 5 === 0 ? 4 : 2;
+        ctx.globalAlpha = .5 + tw * .5; ctx.fillRect(((sx % (viewW + 200)) + viewW + 200) % (viewW + 200) - 100, sy, r, r);
+      }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#fff6c8'; ctx.fillRect(viewW - 200, 130, 56, 56); ctx.fillStyle = 'rgba(14,20,62,.35)'; ctx.fillRect(viewW - 180, 130, 36, 36);   // 月亮
+    }
 
     ctx.save();
     const sx = cam.shake > 0 ? rand(-5, 5) : 0, sy = cam.shake > 0 ? rand(-4, 4) : 0;
@@ -1069,6 +1204,12 @@
     for (const c of items) {
       if (c.got || c.x < cam.x - 40 || c.x > cam.x + viewW + 40) continue;
       const y = c.y + Math.sin(c.t * 3) * 4;
+      if (c.kind === 'heart') { drawTile(TILE.heart, c.x - 20, y - 20, 40); continue; }
+      if (c.kind === 'wand') {
+        ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(c.x, y); ctx.rotate(Math.sin(c.t * 3) * 0.3);
+        if (IMG.wand) ctx.drawImage(IMG.wand, -20, -20, 40, 40);
+        ctx.restore(); continue;
+      }
       if (c.kind === 'gem') {
         const s = 1 + Math.sin(c.t * 4) * 0.04;
         drawGem(c.x, y, s, c.color);
@@ -1187,6 +1328,8 @@
     }
     ctx.globalAlpha = 1;
     ctx.restore();
+    if (level.tint === 'night') { ctx.fillStyle = 'rgba(20,30,90,.22)'; ctx.fillRect(0, 0, viewW + 2, VIEW_H); }
+    if (level.tint === 'dusk') { ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = 'rgb(255,215,185)'; ctx.fillRect(0, 0, viewW + 2, VIEW_H); ctx.globalCompositeOperation = 'source-over'; }
 
     distEl.textContent = Math.floor(Math.max(0, bestX) / 50);
     gemEl.textContent = gemCount;
@@ -1273,6 +1416,7 @@
     BIOMES.grass.img = g; BIOMES.beach.img = b;
     resetWorld(); resetPlayer(); renderHearts();
     generateUntil(viewW + 1200);
+    renderLevels();
     requestAnimationFrame(frame);
   });
 })();
@@ -1355,10 +1499,12 @@ window.ZhuyinDuel = (() => {
   $('speakBtn').addEventListener('click', () => speak(rounds[round][2]));
 
   return {
-    open(bossImg, win) {
+    open(bossImg, win, symbols = '') {
       onWin = win; pad.busy = false;
-      const pool = [...WORDS].sort(() => Math.random() - 0.5);
-      rounds = pool.slice(0, ROUNDS); round = 0; hp = ROUNDS;
+      const shuffle = a => [...a].sort(() => Math.random() - 0.5);
+      const mine = shuffle(WORDS.filter(w => !symbols || symbols.includes(w[0])));
+      rounds = mine.concat(shuffle(WORDS.filter(w => !mine.includes(w)))).slice(0, ROUNDS);   // 不夠 3 題就從全部補
+      round = 0; hp = ROUNDS;
       screen.classList.remove('hidden');
       const bc = $('duelBoss'), bg = bc.getContext('2d');
       bg.clearRect(0, 0, bc.width, bc.height);

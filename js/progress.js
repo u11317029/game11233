@@ -3,6 +3,7 @@
 //   zhuyin-ws        學習單：每個單元最好成績         { 1: { stars, right, total }, ... }
 //   zhuyin-game      冒險遊戲：最遠距離、最多寶石、打敗大怪物次數 { bestDist, bestGems, bossWins }
 //   zhuyin-warmup    首頁泡泡暖身：最高分             { best }
+//   zhuyin-levels    冒險遊戲關卡：每關最好星星數     { 1: { stars, gems }, ..., endlessBest }
 window.ZhuyinProgress = {
   load(key, def = {}) {
     try { return Object.assign(def, JSON.parse(localStorage.getItem(key) || '{}')); } catch (e) { return def; }

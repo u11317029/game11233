@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>小簡的注音大冒險</title>
-<meta name="description" content="注音教育互動網站：繪本故事、多模態教材、分單元學習單、手勢空中寫字冒險遊戲。">
+<meta name="description" content="注音教育互動網站：多模態教材、分單元學習單、手勢空中寫字冒險遊戲。">
 <link rel="icon" href="assets/xiaojian_pixel.png">
 <link rel="stylesheet" href="css/site.css">
 <style>
@@ -61,7 +61,7 @@
   .door p { margin: 0; color: var(--muted); }
   .door .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; padding-top: 8px; }
   .door .tags span { font-size: 13px; font-weight: 800; background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 0 10px; }
-  .door.game { background: #fff1de; } .door.mat { background: #e9f6ff; } .door.ws { background: #eefbe7; } .door.tale { background: #fdeefe; }
+  .door.game { background: #fff1de; } .door.mat { background: #e9f6ff; } .door.ws { background: #eefbe7; }
 
   /* ───── 四種學習方式 ───── */
   .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
@@ -69,21 +69,6 @@
   .mode .big { font-size: 40px; line-height: 1; }
   .mode h3 { margin: 0; font-size: 20px; }
   .mode p { margin: 2px 0 0; color: var(--muted); font-size: 15px; }
-
-  /* ───── 故事繪本 ───── */
-  .story { display: grid; grid-template-columns: 1fr 1fr; gap: 0; overflow: hidden; }
-  .story .pic { background: #fff; display: flex; align-items: center; justify-content: center; border-right: 4px solid var(--ink); min-height: 340px; position: relative; }
-  .story .pic img { width: 100%; max-width: 420px; aspect-ratio: 1; object-fit: contain; transition: opacity .35s, transform .35s; }
-  .story .pic img.fade { opacity: 0; transform: scale(.96); }
-  .story .pic .pg { position: absolute; left: 14px; top: 12px; font-weight: 900; background: var(--paper); border: 3px solid var(--ink); border-radius: 999px; padding: 0 12px; }
-  .story .text { padding: 26px 28px; display: flex; flex-direction: column; gap: 14px; }
-  .story .text h3 { margin: 0; font-size: 26px; }
-  .story .text p { margin: 0; font-size: 22px; line-height: 1.8; min-height: 5.4em; }
-  .story .text p .zy-hl { color: var(--orange-d); font-weight: 900; }
-  .story .ctrl { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; align-items: center; }
-  .dots { display: flex; gap: 6px; margin-left: auto; }
-  .dots button { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--ink); background: #fff; padding: 0; cursor: pointer; }
-  .dots button.on { background: var(--orange); }
 
   /* ───── 今日注音 + 泡泡暖身 ───── */
   .duo { display: grid; grid-template-columns: .9fr 1.1fr; gap: 18px; }
@@ -180,8 +165,7 @@
     .speech::after { right: 50%; transform: translateX(50%); }
     .hero h1 { font-size: clamp(28px, 7.6vw, 58px); letter-spacing: 1px; }
     .hero .title { padding: 20px; }
-    .story, .duo { grid-template-columns: 1fr; }
-    .story .pic { border-right: none; border-bottom: 4px solid var(--ink); min-height: 260px; }
+    .duo { grid-template-columns: 1fr; }
     .path { grid-template-columns: repeat(2, 1fr); }
     .stone::after { content: none; }
     .doors { margin-top: 20px; }
@@ -211,17 +195,17 @@
     <div class="title">
       <div class="badge-row"><span>👀 看</span><span>👂 聽</span><span>✍️ 寫</span><span>☝️ 空中寫</span><span>🎮 玩</span></div>
       <h1>小簡的<em>注音</em>大冒險</h1>
-      <p class="lead">跟著小簡讀繪本、學注音、寫學習單，再到冒險世界用手指在空中寫注音，打敗大怪物！</p>
+      <p class="lead">跟著小簡學注音、寫學習單，再到冒險世界用手指在空中寫注音，打敗大怪物！</p>
       <div class="go">
         <a class="btn primary" href="game.html">🎮 開始冒險</a>
         <a class="btn" href="materials.html">📚 先學注音</a>
-        <a class="btn" href="#story">📖 看故事</a>
+        <a class="btn" href="worksheet.html">📝 學習單</a>
       </div>
       <div class="hint">💡 點點看飄上來的注音泡泡，會念給你聽喔！</div>
     </div>
     <div class="kid-wrap">
       <div class="speech" id="speech">嗨！我是小簡，一起去冒險吧！</div>
-      <img class="kid px" id="kid" src="assets/story/px-2.png" alt="拿著魔杖的小簡">
+      <img class="kid px" id="kid" src="assets/xiaojian_hero.png" alt="拿著魔杖的小簡">
     </div>
   </div>
 </header>
@@ -229,11 +213,6 @@
 <main class="wrap">
   <!-- 快速入口 -->
   <div class="doors">
-    <a class="card door tale" href="#story">
-      <div class="ic">📖</div><h3>故事繪本</h3>
-      <p>小簡怎麼用注音魔法打敗大怪物？一起來讀故事。</p>
-      <div class="tags"><span>5 頁</span><span>朗讀</span></div>
-    </a>
     <a class="card door mat" href="materials.html">
       <div class="ic">📚</div><h3>教材展示</h3>
       <p>37 個注音、10 個單元，看圖、聽音、描寫、空中寫。</p>
@@ -246,8 +225,8 @@
     </a>
     <a class="card door game" href="game.html">
       <div class="ic">🎮</div><h3>冒險遊戲</h3>
-      <p>跳台階、收寶石，用手勢寫注音打敗大怪物。</p>
-      <div class="tags"><span>手勢偵測</span><span>闖關</span></div>
+      <p>5 個關卡＋無盡模式，跳台階、收寶石，用手勢寫注音打敗大怪物。</p>
+      <div class="tags"><span>手勢偵測</span><span>5 關</span><span>星星評分</span></div>
     </a>
   </div>
 
@@ -261,26 +240,6 @@
     <div class="card mode"><div class="big">☝️</div><div><h3>空中寫</h3><p>對著鏡頭用食指寫，手勢偵測辨識。</p></div></div>
     <div class="card mode"><div class="big">🎮</div><div><h3>玩一玩</h3><p>泡泡暖身、冒險闖關，學習變遊戲。</p></div></div>
   </div>
-
-  <!-- 故事繪本 -->
-  <section id="story">
-    <h2 class="sec">📖 小簡的冒險故事</h2>
-    <p class="sec-sub">按「🔊 念給我聽」或「▶ 自動播放」，跟著小簡一起冒險。</p>
-    <div class="card story">
-      <div class="pic"><span class="pg" id="storyPg">1 / 5</span><img id="storyImg" class="px" src="assets/story/px-1.png" alt=""></div>
-      <div class="text">
-        <h3 id="storyTitle"></h3>
-        <p id="storyText"></p>
-        <div class="ctrl">
-          <button class="btn small" id="storyPrev">◀</button>
-          <button class="btn small" id="storyNext">▶</button>
-          <button class="btn small" id="storySay">🔊 念給我聽</button>
-          <button class="btn small primary" id="storyAuto">▶ 自動播放</button>
-          <div class="dots" id="storyDots"></div>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <!-- 今日注音 + 泡泡暖身 -->
   <h2 class="sec">☀️ 每日一練</h2>
@@ -329,7 +288,7 @@
       <b>建議一節課流程（40 分鐘）</b>
       <div class="timeline">
         <div style="flex:5;background:#e9f6ff">🫧 暖身<small>泡泡遊戲 5'</small></div>
-        <div style="flex:10;background:#fdeefe">📖 引起動機<small>故事＋今日注音 10'</small></div>
+        <div style="flex:10;background:#fdeefe">☀️ 引起動機<small>今日注音 10'</small></div>
         <div style="flex:10;background:#fff1de">📺 教材投影<small>看、聽、空中寫 10'</small></div>
         <div style="flex:10;background:#eefbe7">📝 學習單<small>線上或紙本 10'</small></div>
         <div style="flex:5;background:#fff7e0">🎮 獎勵<small>冒險遊戲 5'</small></div>
@@ -374,7 +333,7 @@
     <img src="assets/xiaojian_pixel.png" alt="">
     <span>小簡的注音大冒險 · 注音教育互動網站<br><small>部分像素素材：<a href="https://kenney.nl/assets/pixel-platformer" style="font-weight:normal">Kenney Pixel Platformer</a>（CC0）・像素字型：俐方體11號 Cubic 11</small></span>
     <nav>
-      <a href="#story">故事</a><a href="materials.html">教材</a><a href="worksheet.html">學習單</a><a href="game.html">遊戲</a><a href="#teacher">教師專區</a>
+      <a href="materials.html">教材</a><a href="worksheet.html">學習單</a><a href="game.html">遊戲</a><a href="#teacher">教師專區</a>
     </nav>
   </div>
 </footer>
@@ -416,40 +375,6 @@
     bubbles.appendChild(b);
   }
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { for (let i = 0; i < 3; i++) setTimeout(spawnBubble, i * 900); setInterval(spawnBubble, 1800); }
-
-  // ───────── 故事繪本 ─────────
-  const STORY = [
-    { t: '奇怪的聲音', p: '小簡是一個喜歡探險的女孩。有一天，她聽到森林裡傳來「咕嚕咕嚕」的奇怪聲音……' },
-    { t: '魔法披風', p: '小簡披上紫色的魔法披風，拿起注音魔杖：「我準備好了，出發！」' },
-    { t: '注音魔法', p: '原來，只要用魔杖在空中寫出正確的注音，就能放出閃閃發亮的魔法！' },
-    { t: '擊退大怪物', p: '大怪物擋住了去路！小簡大聲念出注音，寫出「ㄅ、ㄆ、ㄇ」，一下子就把怪物趕跑了！' },
-    { t: '注音寶藏', p: '最後，小簡找到了滿滿的注音寶藏！你也想跟小簡一起去冒險嗎？' },
-  ];
-  let page = 0, auto = null;
-  $('storyDots').innerHTML = STORY.map((_, i) => `<button aria-label="第 ${i + 1} 頁" data-i="${i}"></button>`).join('');
-  function showPage(i, read = false) {
-    page = (i + STORY.length) % STORY.length;
-    const img = $('storyImg');
-    img.classList.add('fade');
-    setTimeout(() => { img.src = `assets/story/px-${page + 1}.png`; img.alt = STORY[page].t; img.classList.remove('fade'); }, 200);
-    $('storyPg').textContent = `${page + 1} / ${STORY.length}`;
-    $('storyTitle').textContent = STORY[page].t;
-    $('storyText').innerHTML = STORY[page].p.replace(/([ㄅ-ㄩ])/g, '<span class="zy-hl">$1</span>');
-    document.querySelectorAll('#storyDots button').forEach((b, k) => b.classList.toggle('on', k === page));
-    if (read) speak(STORY[page].p, 0.9);
-  }
-  function stopAuto() { clearInterval(auto); auto = null; $('storyAuto').textContent = '▶ 自動播放'; }
-  $('storyPrev').addEventListener('click', () => { stopAuto(); showPage(page - 1); });
-  $('storyNext').addEventListener('click', () => { stopAuto(); showPage(page + 1); });
-  $('storySay').addEventListener('click', () => speak(STORY[page].p, 0.9));
-  $('storyDots').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { stopAuto(); showPage(+b.dataset.i); } });
-  $('storyAuto').addEventListener('click', () => {
-    if (auto) return stopAuto();
-    $('storyAuto').textContent = '⏸ 暫停';
-    showPage(page, true);
-    auto = setInterval(() => { if (page === STORY.length - 1) return stopAuto(); showPage(page + 1, true); }, 9000);
-  });
-  showPage(0);
 
   // ───────── 今日注音（每天換一個） ─────────
   const dayNo = Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 86400000);
@@ -537,6 +462,8 @@
     const ws = ZhuyinProgress.load('zhuyin-ws');
     const game = ZhuyinProgress.load('zhuyin-game');
     const wu = ZhuyinProgress.load('zhuyin-warmup');
+    const lv = ZhuyinProgress.load('zhuyin-levels');
+    const cleared = [1, 2, 3, 4, 5].filter(i => lv[i]).length;
     const learned = ALL.filter(s => mat[s.ch] > 0).length;
     const wsDone = Object.keys(ws).length;
     const wsStars = Object.values(ws).reduce((a, w) => a + (w.stars || 0), 0);
@@ -545,7 +472,7 @@
     $('stats').innerHTML =
       stat(learned / ALL.length * 100, learned, '寫對的注音', `共 ${ALL.length} 個`, '#f08a3c') +
       stat(wsDone / ZHUYIN_UNITS.length * 100, wsDone, '完成的學習單', `共 ${ZHUYIN_UNITS.length} 單元・⭐ ${wsStars}`, '#5aa836') +
-      stat(Math.min(100, (game.bossWins || 0) * 34), game.bossWins || 0, '打敗大怪物', `最遠 ${game.bestDist || 0} 公尺`, '#c0392b') +
+      stat(cleared / 5 * 100, cleared, '冒險遊戲過關', `共 5 關・打敗大怪物 ${game.bossWins || 0} 次`, '#c0392b') +
       stat((wu.best || 0) / ROUNDS * 100, wu.best || 0, '泡泡暖身最高分', `滿分 ${ROUNDS}`, '#3d8fd1');
 
     const BADGES = [
@@ -558,6 +485,7 @@
       ['💎', '寶石獵人', '一次遊戲收集 20 顆寶石', (game.bestGems || 0) >= 20],
       ['⚔️', '打怪英雄', '打敗大怪物', (game.bossWins || 0) >= 1],
       ['🫧', '順風耳', '泡泡暖身一次全對', (wu.best || 0) >= ROUNDS],
+      ['🏁', '闖關高手', '冒險遊戲 5 關全部過關', cleared >= 5],
     ];
     const got = BADGES.filter(b => b[3]).length;
     $('badges').innerHTML = `<div style="grid-column:1/-1;font-weight:900">🎖️ 徽章牆：已獲得 ${got} / ${BADGES.length}</div>` +
@@ -580,7 +508,7 @@
   renderProgress();
   $('resetProgress').addEventListener('click', () => {
     if (!confirm('確定要清除這台裝置上的所有學習紀錄嗎？')) return;
-    ['zhuyin-progress', 'zhuyin-ws', 'zhuyin-game', 'zhuyin-warmup'].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+    ['zhuyin-progress', 'zhuyin-ws', 'zhuyin-game', 'zhuyin-warmup', 'zhuyin-levels'].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
     Object.keys(warm).forEach(k => delete warm[k]); showBest();
     renderProgress();
   });
