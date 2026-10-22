@@ -82,3 +82,59 @@ window.zhuyinRuby = function (s, hl = s.at) {
   };
   return [...s.word].map((c, i) => `<span class="ch ${i === hl ? 'hl' : ''}"><b>${c}</b>${zy(s.reading[i] || '')}</span>`).join('');
 };
+
+// ═════════ 聽音辨識：容易混淆的注音對 ═════════
+// items：例詞（at = 要聽的那個字在詞裡的位置、zy = 那個字的注音、ans = 'a' 或 'b'）
+window.ZHUYIN_PAIRS = [
+  { id: 'en-eng', a: 'ㄣ', b: 'ㄥ', title: '前鼻音 ㄣ／後鼻音 ㄥ', color: '#4a6fa5',
+    tipA: '舌尖頂住上牙齦，聲音短短的、在前面。', tipB: '舌頭後面往上抬，聲音在鼻子後面、比較長。',
+    items: [
+      { word: '開心', at: 1, zy: 'ㄒㄧㄣ', ans: 'a', emoji: '😊' }, { word: '金魚', at: 0, zy: 'ㄐㄧㄣ', ans: 'a', emoji: '🐟' },
+      { word: '臉盆', at: 1, zy: 'ㄆㄣˊ', ans: 'a', emoji: '🪣' }, { word: '大門', at: 1, zy: 'ㄇㄣˊ', ans: 'a', emoji: '🚪' },
+      { word: '星星', at: 0, zy: 'ㄒㄧㄥ', ans: 'b', emoji: '⭐' }, { word: '鯨魚', at: 0, zy: 'ㄐㄧㄥ', ans: 'b', emoji: '🐋' },
+      { word: '朋友', at: 0, zy: 'ㄆㄥˊ', ans: 'b', emoji: '🧑‍🤝‍🧑' }, { word: '做夢', at: 1, zy: 'ㄇㄥˋ', ans: 'b', emoji: '💤' },
+    ] },
+  { id: 'an-ang', a: 'ㄢ', b: 'ㄤ', title: '前鼻音 ㄢ／後鼻音 ㄤ', color: '#2f9e8f',
+    tipA: '先念「ㄚ」，最後舌尖頂住上牙齦。', tipB: '先念「ㄚ」，最後舌頭後面往上抬，聲音比較響亮。',
+    items: [
+      { word: '高山', at: 1, zy: 'ㄕㄢ', ans: 'a', emoji: '⛰️' }, { word: '帆船', at: 1, zy: 'ㄔㄨㄢˊ', ans: 'a', emoji: '⛵' },
+      { word: '盤子', at: 0, zy: 'ㄆㄢˊ', ans: 'a', emoji: '🍽️' }, { word: '扇子', at: 0, zy: 'ㄕㄢˋ', ans: 'a', emoji: '🪭' },
+      { word: '糖果', at: 0, zy: 'ㄊㄤˊ', ans: 'b', emoji: '🍬' }, { word: '起床', at: 1, zy: 'ㄔㄨㄤˊ', ans: 'b', emoji: '🛏️' },
+      { word: '螃蟹', at: 0, zy: 'ㄆㄤˊ', ans: 'b', emoji: '🦀' }, { word: '綿羊', at: 1, zy: 'ㄧㄤˊ', ans: 'b', emoji: '🐑' },
+    ] },
+  { id: 'l-n', a: 'ㄌ', b: 'ㄋ', title: '邊音 ㄌ／鼻音 ㄋ', color: '#e8634a',
+    tipA: '舌尖頂上牙齦，聲音從舌頭兩邊出來。', tipB: '舌尖頂上牙齦，聲音從鼻子出來（捏住鼻子就念不出來）。',
+    items: [
+      { word: '梨子', at: 0, zy: 'ㄌㄧˊ', ans: 'a', emoji: '🍐' }, { word: '籃球', at: 0, zy: 'ㄌㄢˊ', ans: 'a', emoji: '🏀' },
+      { word: '小鹿', at: 1, zy: 'ㄌㄨˋ', ans: 'a', emoji: '🦌' }, { word: '老虎', at: 0, zy: 'ㄌㄠˇ', ans: 'a', emoji: '🐯' },
+      { word: '泥土', at: 0, zy: 'ㄋㄧˊ', ans: 'b', emoji: '🟫' }, { word: '男生', at: 0, zy: 'ㄋㄢˊ', ans: 'b', emoji: '👦' },
+      { word: '牛奶', at: 0, zy: 'ㄋㄧㄡˊ', ans: 'b', emoji: '🥛' }, { word: '小鳥', at: 1, zy: 'ㄋㄧㄠˇ', ans: 'b', emoji: '🐦' },
+    ] },
+  { id: 'zh-z', a: 'ㄓ', b: 'ㄗ', title: '翹舌 ㄓ／平舌 ㄗ', color: '#7b5cc4',
+    tipA: '舌尖往上翹，頂住上顎。', tipB: '舌尖平平的，頂住上排牙齒後面。',
+    items: [
+      { word: '小豬', at: 1, zy: 'ㄓㄨ', ans: 'a', emoji: '🐷' }, { word: '蜘蛛', at: 0, zy: 'ㄓ', ans: 'a', emoji: '🕷️' },
+      { word: '桌子', at: 0, zy: 'ㄓㄨㄛ', ans: 'a', emoji: '🪑' }, { word: '竹子', at: 0, zy: 'ㄓㄨˊ', ans: 'a', emoji: '🎋' },
+      { word: '足球', at: 0, zy: 'ㄗㄨˊ', ans: 'b', emoji: '⚽' }, { word: '嘴巴', at: 0, zy: 'ㄗㄨㄟˇ', ans: 'b', emoji: '👄' },
+      { word: '寫字', at: 1, zy: 'ㄗˋ', ans: 'b', emoji: '✍️' }, { word: '早安', at: 0, zy: 'ㄗㄠˇ', ans: 'b', emoji: '🌅' },
+    ] },
+  { id: 'sh-s', a: 'ㄕ', b: 'ㄙ', title: '翹舌 ㄕ／平舌 ㄙ', color: '#c9a227',
+    tipA: '舌尖往上翹，讓氣從縫裡摩擦出來。', tipB: '舌尖平平的靠近牙齒，讓氣「嘶嘶」出來。',
+    items: [
+      { word: '獅子', at: 0, zy: 'ㄕ', ans: 'a', emoji: '🦁' }, { word: '書本', at: 0, zy: 'ㄕㄨ', ans: 'a', emoji: '📚' },
+      { word: '大樹', at: 1, zy: 'ㄕㄨˋ', ans: 'a', emoji: '🌳' }, { word: '高山', at: 1, zy: 'ㄕㄢ', ans: 'a', emoji: '⛰️' },
+      { word: '三個', at: 0, zy: 'ㄙㄢ', ans: 'b', emoji: '3️⃣' }, { word: '雨傘', at: 1, zy: 'ㄙㄢˇ', ans: 'b', emoji: '☂️' },
+      { word: '松鼠', at: 0, zy: 'ㄙㄨㄥ', ans: 'b', emoji: '🐿️' }, { word: '森林', at: 0, zy: 'ㄙㄣ', ans: 'b', emoji: '🌲' },
+    ] },
+  { id: 'f-h', a: 'ㄈ', b: 'ㄏ', title: '唇齒音 ㄈ／舌根音 ㄏ', color: '#f08a3c',
+    tipA: '上排牙齒輕咬下嘴唇，吹出氣。', tipB: '嘴巴張開，氣從喉嚨後面摩擦出來，不用咬嘴唇。',
+    items: [
+      { word: '飛機', at: 0, zy: 'ㄈㄟ', ans: 'a', emoji: '✈️' }, { word: '風箏', at: 0, zy: 'ㄈㄥ', ans: 'a', emoji: '🪁' },
+      { word: '蜜蜂', at: 1, zy: 'ㄈㄥ', ans: 'a', emoji: '🐝' }, { word: '衣服', at: 1, zy: 'ㄈㄨˊ', ans: 'a', emoji: '👕' },
+      { word: '黑色', at: 0, zy: 'ㄏㄟ', ans: 'b', emoji: '⚫' }, { word: '花朵', at: 0, zy: 'ㄏㄨㄚ', ans: 'b', emoji: '🌸' },
+      { word: '猴子', at: 0, zy: 'ㄏㄡˊ', ans: 'b', emoji: '🐵' }, { word: '喝水', at: 0, zy: 'ㄏㄜ', ans: 'b', emoji: '🥤' },
+    ] },
+];
+// 某個注音有哪些容易混淆的對：ZHUYIN_PAIRS_OF['ㄣ'] → [pair]
+window.ZHUYIN_PAIRS_OF = {};
+for (const pr of window.ZHUYIN_PAIRS) for (const ch of [pr.a, pr.b]) (window.ZHUYIN_PAIRS_OF[ch] = window.ZHUYIN_PAIRS_OF[ch] || []).push(pr);

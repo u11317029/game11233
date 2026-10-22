@@ -99,6 +99,7 @@
   <a class="tab" href="index.html">首頁</a>
   <a class="tab" href="game.html">冒險遊戲</a>
   <a class="tab" href="materials.html">教材展示</a>
+  <a class="tab" href="listen.html">聽音辨識</a>
   <a class="tab on" href="worksheet.html">學習單</a>
 </nav>
 
@@ -155,6 +156,13 @@
         <div class="col left" id="matchL"></div>
         <div class="col right" id="matchR"></div>
       </div>
+    </section>
+
+    <section class="part" id="pairPart" hidden>
+      <h2><span class="no">六</span>聽音分辨</h2>
+      <p class="how no-print">這些注音聽起來很像！按 🔊 聽詞語，選出畫底線的字有哪一個注音。</p>
+      <p class="how print-note">（老師念詞語，學生圈出畫底線的字的注音）</p>
+      <div class="qs" id="pairQs"></div>
     </section>
 
     <div class="done-bar">
@@ -224,7 +232,7 @@
   });
 
   // ───────── 三、四、五：可評分的題目 ─────────
-  let listenQs = [], circleQs = [], matchItems = [];
+  let listenQs = [], circleQs = [], matchItems = [], pairQs = [];
 
   function build() {
     graded = false; answers = {}; pairs = {};
@@ -258,6 +266,19 @@
     const under = s => [...s.word].map((c, k) => k === s.at ? `<b style="color:var(--orange-d);text-decoration:underline;text-underline-offset:4px">${c}</b>` : c).join('');
     $('matchL').innerHTML = shuffle(matchItems).map(s => `<div class="item" data-l="${s.ch}"><span>${s.emoji} ${under(s)}</span><span class="dot" style="margin-left:auto"></span></div>`).join('');
     $('matchR').innerHTML = shuffle(matchItems).map(s => `<div class="item" data-r="${s.ch}"><span class="dot"></span>${s.ch}</div>`).join('');
+    // 六、聽音分辨：本單元有容易混淆的注音（ㄣ／ㄥ、ㄌ／ㄋ…）才出現
+    const prs = ZHUYIN_PAIRS.filter(pr => unit.symbols.some(s => s.ch === pr.a || s.ch === pr.b));
+    pairQs = prs.flatMap(pr => [...shuffle(pr.items.filter(it => it.ans === 'a')).slice(0, 2), ...shuffle(pr.items.filter(it => it.ans === 'b')).slice(0, 2)]
+      .map(it => ({ it, pr, ans: it.ans === 'a' ? pr.a : pr.b })));
+    pairQs = shuffle(pairQs).slice(0, 6).map((qq, i) => ({ ...qq, id: 'P' + i, opts: shuffle([qq.pr.a, qq.pr.b]) }));
+    $('pairPart').hidden = !pairQs.length;
+    $('pairQs').innerHTML = pairQs.map((qq, i) => {
+      const w = [...qq.it.word].map((c, k) => k === qq.it.at ? `<b>${c}</b>` : c).join('');
+      return `<div class="q" data-q="${qq.id}"><span class="n">${NUM[i]}</span>
+        <button class="btn small say" data-word="${qq.it.word}">🔊</button><span class="pic">${qq.it.emoji}</span><span class="w">${w}</span>
+        <div class="opts">${qq.opts.map(o => `<button class="opt" data-o="${o}">${o}</button>`).join('')}</div>
+        <span class="mark"></span></div>`;
+    }).join('');
     drawLines();
   }
 
@@ -268,7 +289,9 @@
     const row = document.querySelector(`[data-q="${qid}"]`);
     row.querySelectorAll('.opt').forEach(b => b.classList.toggle('pick', b.dataset.o === o));
   }
-  ['listen', 'circle'].forEach(id => $(id).addEventListener('click', e => {
+  ['listen', 'circle', 'pairQs'].forEach(id => $(id).addEventListener('click', e => {
+    const word = e.target.closest('[data-word]');
+    if (word) return speak(word.dataset.word, 0.8);
     const say = e.target.closest('[data-say]');
     if (say) return speak(sayOf(ZHUYIN_INDEX[say.dataset.say]));
     const opt = e.target.closest('.opt'); if (!opt) return;
@@ -307,7 +330,7 @@
   function grade() {
     graded = true;
     let right = 0, total = 0;
-    for (const qq of [...listenQs, ...circleQs]) {
+    for (const qq of [...listenQs, ...circleQs, ...pairQs]) {
       total++;
       const row = document.querySelector(`[data-q="${qq.id}"]`), got = answers[qq.id];
       const ok = got === qq.ans; if (ok) right++;

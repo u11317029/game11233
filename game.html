@@ -27,7 +27,36 @@
   .bestiary b { display: block; font-size: 14px; }
   .bestiary .no { color: #c0392b; } .bestiary .ok { color: #2e9d4a; }
   .card { max-height: 94vh; overflow: auto; }
-  #startScreen .card { max-width: min(700px, 94vw); padding: 22px 26px; }
+  .worldmap { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; background: #1b1220; color: #fffaeb; }
+  .worldmap.hidden { display: none; }
+  .map-head { display: flex; align-items: flex-start; gap: 16px; padding: 14px 20px 8px 20px; padding-right: 380px; flex-wrap: wrap; }
+  .map-head h1 { margin: 0; font-size: clamp(24px, 3.6vw, 36px); text-shadow: 3px 3px 0 #000; }
+  .map-head p { margin: 4px 0 0; font-size: 15px; opacity: .9; }
+  .map-head kbd { background: #fffaeb; color: #3b2414; padding: 0 6px; margin: 0 2px; font-family: inherit; }
+  .map-head .dex { margin: 0; background: #fffaeb; color: #3b2414; padding: 6px 12px; max-width: 460px; }
+  .map-scroll { flex: 1; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: #f08a3c #2a1a30; display: flex; align-items: center;
+                background: linear-gradient(180deg, #1b1220, #2a1a30); }
+  .map { position: relative; height: clamp(230px, 50vh, 360px); flex: none; box-shadow: 0 -4px 0 #000, 0 4px 0 #000; }
+  .map canvas { height: 100%; display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+  .node { position: absolute; transform: translate(-50%, -50%); width: clamp(46px, 7.5vh, 64px); height: clamp(46px, 7.5vh, 64px); cursor: pointer; border: none; padding: 0;
+          font: inherit; font-size: clamp(20px, 3.4vh, 28px); color: #fff; --fill: var(--c); display: flex; align-items: center; justify-content: center; text-shadow: 2px 2px 0 rgba(0,0,0,.35); }
+  .node:hover { transform: translate(-50%, -58%); }
+  .node.locked { --fill: #8a8178; color: #e8e0d6; cursor: not-allowed; }
+  .node.sel { animation: nodepulse 1s steps(4) infinite; }
+  @keyframes nodepulse { 50% { transform: translate(-50%, -50%) scale(1.15); } }
+  .node-stars { position: absolute; transform: translateX(-50%); font-size: clamp(12px, 2vh, 16px); white-space: nowrap; text-shadow: 1px 1px 0 #000; pointer-events: none; }
+  .node-name { position: absolute; transform: translateX(-50%); font-size: clamp(13px, 2.2vh, 17px); white-space: nowrap; pointer-events: none; color: #fff;
+               background: rgba(27,18,32,.75); padding: 1px 8px; }
+  .map-kid { position: absolute; width: clamp(40px, 8vh, 64px); transform: translate(-50%, -100%); image-rendering: pixelated; pointer-events: none;
+             transition: left .6s steps(8), top .6s steps(8); animation: kidbob .8s steps(2) infinite; z-index: 2; }
+  @keyframes kidbob { 50% { margin-top: -4px; } }
+  .map-info { margin: 8px 20px 16px; background: #fffaeb; color: #3b2414; padding: 12px 18px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .map-info .lvno { width: 54px; height: 54px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #fff; --fill: var(--c); }
+  .map-info h2 { margin: 0; font-size: 24px; color: #3b2414; }
+  .map-info p { margin: 2px 0 0; font-size: 15px; }
+  .map-info .go { margin-left: auto; margin-top: 0; font-size: 20px; }
+  .map-info .st { font-size: 20px; letter-spacing: 2px; }
+  @media (max-width: 760px) { .map-head { padding-right: 20px; padding-top: 70px; } }
   .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0 8px; }
   .lv { font: inherit; cursor: pointer; background: #fff; color: #3b2414; text-align: left; padding: 10px 12px; margin: 4px; position: relative;
         box-shadow: 0 -4px 0 #3b2414, 0 4px 0 #3b2414, -4px 0 0 #3b2414, 4px 0 0 #3b2414, 6px 6px 0 rgba(59,36,20,.28); border: none; }
@@ -142,18 +171,25 @@
 </div>
 <div class="toast" id="toast"></div>
 <a class="home" href="index.html">🏠 回首頁</a>
-<button class="lvl-btn pixel-frame" id="lvlBtn">🗺️ 選關卡</button>
+<button class="lvl-btn pixel-frame" id="lvlBtn">🗺️ 地圖</button>
 <div class="progress hidden" id="progress"><div class="track"></div><div class="fill" id="progFill"></div><img id="progKid" src="assets/xiaojian_pixel.png" alt=""><span class="goal" id="progGoal">🐉</span></div>
 
-<div class="overlay" id="startScreen">
-  <div class="card">
-    <h1>小簡的注音大冒險</h1>
-    <p>選一個關卡出發！走到終點打敗大怪物就過關，<br>過關會解鎖下一關。</p>
-    <p><kbd>←</kbd> <kbd>→</kbd> 移動　<kbd>空白鍵</kbd> / <kbd>↑</kbd> 跳躍　<kbd>X</kbd> 魔法</p>
-    <p style="font-size:15px;opacity:.8">❤️ 有 3 顆愛心　❓ 從下面頂問號方塊　🪄 拿到魔杖可以發射魔法　🚩 碰到旗子會存檔　🍄 彈簧蘑菇跳很高</p>
-    <div class="levels" id="levels"></div>
-    <details class="dex"><summary>👾 怪物圖鑑（點開看看）</summary><div class="bestiary" id="bestiary"></div></details>
+<div class="worldmap" id="startScreen">
+  <div class="map-head">
+    <div>
+      <h1>🗺️ 小簡的冒險地圖</h1>
+      <p>點地上的小圓圈進入關卡！過關會解鎖下一關。　<kbd>←</kbd><kbd>→</kbd> 選關卡　<kbd>Enter</kbd> 出發</p>
+    </div>
+    <details class="dex"><summary>👾 怪物圖鑑</summary><div class="bestiary" id="bestiary"></div>
+      <p style="font-size:14px;margin:6px 0 0">❤️ 3 顆愛心　❓ 頂問號方塊　🪄 魔杖按 <kbd>X</kbd>　🚩 存檔旗　🍄 彈簧蘑菇</p></details>
   </div>
+  <div class="map-scroll" id="mapScroll">
+    <div class="map" id="map">
+      <canvas id="mapCanvas"></canvas>
+      <img class="map-kid" id="mapKid" src="assets/xiaojian_pixel.png" alt="小簡">
+    </div>
+  </div>
+  <div class="map-info pixel-frame" id="mapInfo"></div>
 </div>
 
 <div class="overlay hidden" id="clearScreen">
@@ -163,7 +199,7 @@
     <p id="clearInfo"></p>
     <div class="btn-row">
       <button class="btn ghost" id="againBtn">↺ 再玩一次</button>
-      <button class="btn ghost" id="mapBtn">🗺️ 選關卡</button>
+      <button class="btn ghost" id="mapBtn">🗺️ 回地圖</button>
       <button class="btn" id="nextBtn">下一關 ▶</button>
     </div>
   </div>
@@ -240,13 +276,13 @@
       enemies: [['minion', 1], ['slime', .7]], symbols: 'ㄅㄆㄇㄈㄉㄊㄋㄌ', units: '單元 1–2' },
     { id: 2, name: '海邊沙灘', desc: '小心坑洞上的蝙蝠，踩彈簧跳高高', biome: 'beach', length: 4600, boss: 'octopus', spikes: true, springs: true,
       enemies: [['minion', .7], ['slime', .8], ['bat', 1]], symbols: 'ㄍㄎㄏㄐㄑㄒ', units: '單元 3–4' },
-    { id: 3, name: '黃昏草原', desc: '刺刺球和生氣方塊出現了', biome: 'grass', tint: 'dusk', length: 5200, boss: 'dragon', spikes: true, springs: true,
+    { id: 3, name: '蘑菇森林', desc: '刺刺球和生氣方塊躲在大蘑菇後面', biome: 'forest', length: 5200, boss: 'dragon', spikes: true, springs: true,
       enemies: [['slime', .8], ['bat', .8], ['spike', .9], ['block', .8]], symbols: 'ㄓㄔㄕㄖㄗㄘㄙ', units: '單元 5–6' },
-    { id: 4, name: '月光海灘', desc: '害羞幽靈只怕魔法，先拿魔杖！', biome: 'beach', tint: 'night', length: 5800, boss: 'octopus', spikes: true, springs: true,
+    { id: 4, name: '冰雪山谷', desc: '雪地裡有害羞幽靈，牠只怕魔法，先拿魔杖！', biome: 'snow', length: 5800, boss: 'octopus', spikes: true, springs: true,
       enemies: [['bat', 1], ['spike', .7], ['block', .5], ['ghost', 1]], symbols: 'ㄧㄨㄩㄅㄉㄍㄐㄓㄗ', units: '單元 7＋複習' },
-    { id: 5, name: '注音大魔王', desc: '所有怪物都來了！', biome: 'alt', tint: 'night', length: 6600, boss: 'octopus', spikes: true, springs: true,
+    { id: 5, name: '火山城堡', desc: '注音大魔王的城堡，所有怪物都來了！', biome: 'volcano', length: 6600, boss: 'octopus', spikes: true, springs: true,
       enemies: [['minion', .5], ['slime', .8], ['bat', 1], ['spike', .9], ['block', .8], ['ghost', .9]], symbols: '', units: '全部複習' },
-    { id: 6, name: '無盡冒險', desc: '一直往前走，大怪物輪流出現', biome: 'alt', length: BOSS_AT, endless: true, spikes: true, springs: true, symbols: '', units: '全部' },
+    { id: 6, name: '無盡冒險', desc: '五個場景輪流出現，大怪物一隻接一隻', biome: 'alt', length: BOSS_AT, endless: true, spikes: true, springs: true, symbols: '', units: '全部' },
   ];
   let level = LEVELS[0];
   const ZHUYIN = 'ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄧㄨㄩㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦ';
@@ -271,13 +307,108 @@
   // ───────── 圖片 ─────────
   const load = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
   const BIOMES = {
-    grass: { src: 'assets/grass.png', fillTop: '#4c9a6c', fillBot: '#2e5f45',
+    grass: { name: '草原', src: 'assets/grass.png', fillTop: '#4c9a6c', fillBot: '#2e5f45', stones: 'rocks', tuft: 'grass', ambient: 'pollen',
              body: '#b97a48', bodyDark: '#94592f', cap: '#86d14e', capDark: '#5fae35', stone: '#d9b08c', line: '#3b2414' },
-    beach: { src: 'assets/beach.png', fillTop: '#3cc6d8', fillBot: '#1d8fb0',
+    beach: { name: '海灘', src: 'assets/beach.png', fillTop: '#3cc6d8', fillBot: '#1d8fb0', stones: 'dots', tuft: 'beach', ambient: 'bubble',
              body: '#e2a64c', bodyDark: '#c4842f', cap: '#f8e39a', capDark: '#e9c46a', stone: '#f3cf7d', line: '#4a2c12' },
+    forest: { name: '蘑菇森林', proc: true, fillTop: '#1f4a3a', fillBot: '#0f2a20', stones: 'rocks', tuft: 'moss', ambient: 'spore',
+              body: '#7a5236', bodyDark: '#5b3a24', cap: '#4fa36a', capDark: '#2f7a4a', stone: '#a77b55', line: '#2a1a10' },
+    snow: { name: '冰雪山谷', proc: true, fillTop: '#a9cdea', fillBot: '#6f98bf', stones: 'ice', tuft: 'none', ambient: 'snow',
+            body: '#8aa0b8', bodyDark: '#6b7f96', cap: '#ffffff', capDark: '#d8e8f5', stone: '#c3d6e8', line: '#2c3e55' },
+    volcano: { name: '火山城堡', proc: true, fillTop: '#ff7a1a', fillBot: '#a8200a', stones: 'lava', tuft: 'none', ambient: 'ember',
+               body: '#4a3438', bodyDark: '#33222a', cap: '#8a3b2e', capDark: '#5e2620', stone: '#ff8a3a', line: '#1a0e10' },
   };
-  const BIOME_ORDER = ['grass', 'beach'];
+  const BIOME_ORDER = ['grass', 'beach', 'forest', 'snow', 'volcano'];
   const biomeAt = x => level.biome !== 'alt' ? level.biome : BIOME_ORDER[Math.floor(Math.max(0, x) / BIOME_LEN) % BIOME_ORDER.length];
+
+  // ───────── 自己畫的像素場景（森林、雪地、火山）：遠景 + 中景兩層，可以左右無限接起來 ─────────
+  const TW = 480, TH = 270;                       // 每層背景的像素大小（放大 2 倍 = 世界座標 960×540）
+  function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const wave = (x, parts) => parts.reduce((a, [amp, k, ph]) => a + amp * Math.sin(x / TW * Math.PI * 2 * k + ph), 0);   // k 是整數 → 左右接得起來
+  function pxLayer(fn) {
+    const c = document.createElement('canvas'); c.width = TW; c.height = TH;
+    const g = c.getContext('2d');
+    const r = (x, y, w, h, col) => { g.fillStyle = col; for (const dx of [0, -TW, TW]) g.fillRect(Math.round(x) + dx, Math.round(y), w, h); };   // 左右邊界自動補畫
+    fn(r, g); return c;
+  }
+  function pine(r, x, baseY, h, col, dark, snow) {
+    r(x - 1, baseY - 5, 3, 5, '#3b2414');
+    for (let i = 0; i < h; i++) {
+      const w = Math.floor((i % 8 + 2) * (0.35 + i / h * 0.55)) + 1, y = baseY - 5 - h + i;
+      r(x - w, y, w * 2 + 1, 1, i % 8 > 5 ? dark : col);
+      if (snow && i % 8 === 0) r(x - w, y, w * 2 + 1, 2, '#ffffff');
+    }
+  }
+  function buildProcBiome(key) {
+    const R = rng(key.length * 9973);
+    if (key === 'forest') return {
+      sky: ['#2f6f73', '#3b8580', '#4f9a8d', '#6db39b', '#8cc9a8', '#a9dbb3'],
+      far: pxLayer(r => {
+        for (let x = 0; x < TW; x++) { const y = 150 + wave(x, [[16, 2, .4], [9, 5, 1.3]]); r(x, y, 1, TH - y, '#3f7d68'); }
+        for (let x = 6; x < TW; x += 13) pine(r, x, 160 + wave(x, [[16, 2, .4], [9, 5, 1.3]]) + 6, 22 + Math.floor(R() * 14), '#2f6a55', '#295e4b');
+      }),
+      mid: pxLayer(r => {
+        r(0, 214, TW, TH, '#1f4a3a');
+        for (let x = 10; x < TW; x += 34 + Math.floor(R() * 20)) pine(r, x, 218, 46 + Math.floor(R() * 30), '#1f4a3a', '#183a2e');
+        for (const mx of [70, 230, 390]) {                               // 大蘑菇
+          const h = 34 + Math.floor(R() * 14), cw = 30;
+          r(mx - 4, 218 - h, 9, h, '#f2e6c9'); r(mx + 3, 218 - h, 2, h, '#d9c9a5');
+          for (let i = 0; i < 12; i++) { const w = Math.round(cw * Math.sqrt(1 - ((11 - i) / 12) ** 2)); r(mx - w, 218 - h - 12 + i, w * 2 + 1, 1, i > 9 ? '#a8332a' : '#d94a3a'); }
+          for (const [dx, dy] of [[-14, 4], [8, 2], [-2, 7], [17, 8]]) r(mx + dx, 218 - h - 12 + dy, 3, 2, '#fff4e6');
+        }
+      }),
+    };
+    if (key === 'snow') return {
+      sky: ['#8fc6ef', '#a6d3f3', '#bcdff6', '#d1e9f8', '#e5f2fb', '#f5fafd'],
+      far: pxLayer(r => {
+        for (let x = 0; x < TW; x++) {
+          const y = Math.round(118 + wave(x, [[42, 2, 0], [18, 3, 1], [7, 7, 2]]));
+          r(x, y, 1, TH - y, '#9fb7cf'); r(x, y, 1, y < 104 ? 10 : 4, '#ffffff');
+          if (x % 3 === 0) r(x, y + 10, 1, 6, '#b6c9dc');
+        }
+      }),
+      mid: pxLayer(r => {
+        for (let x = 0; x < TW; x++) { const y = Math.round(204 + wave(x, [[6, 3, .5], [3, 7, 1]])); r(x, y, 1, TH - y, '#e9f3fb'); r(x, y + 6, 1, 3, '#cfe1f0'); }
+        for (let x = 14; x < TW; x += 30 + Math.floor(R() * 26)) pine(r, x, 212, 36 + Math.floor(R() * 26), '#2f6a6a', '#245656', true);
+      }),
+    };
+    return {                                                              // volcano
+      sky: ['#24102c', '#36142e', '#4f182c', '#701d28', '#9a2822', '#c4461c'],
+      far: pxLayer(r => {
+        const cx = TW / 2;
+        for (let x = 0; x < TW; x++) {
+          const cone = Math.max(0, 96 - Math.abs(x - cx) * 0.95);
+          const y = Math.round(196 - cone + wave(x, [[5, 4, .2], [3, 9, 1]]));
+          r(x, y, 1, TH - y, '#3a1a22');
+          if (cone > 88) r(x, y, 1, 3, '#ff7a1a');                   // 山頂的岩漿
+        }
+        for (let i = 0; i < 4; i++) { const lx = cx - 6 + i * 4; r(lx, 104 + i * 6, 2, 40 + i * 10, i % 2 ? '#ff7a1a' : '#e8501a'); }
+        for (let i = 0; i < 6; i++) r(cx - 14 + i * 5 + R() * 6, 70 - i * 8, 10, 6, 'rgba(110,80,90,.7)');   // 煙
+      }),
+      mid: pxLayer(r => {
+        r(0, 214, TW, TH, '#2a1219');
+        for (let x = 20; x < TW; x += 110) {                            // 城堡塔樓
+          const h = 70 + Math.floor(R() * 30), w = 26;
+          r(x, 218 - h, w, h, '#2a1219');
+          for (let k = 0; k < w; k += 6) r(x + k, 218 - h - 6, 4, 6, '#2a1219');
+          r(x + 9, 218 - h + 16, 5, 7, '#ffb347'); r(x + 9, 218 - h + 40, 5, 7, '#ffb347');
+          r(x + w, 218 - 44, 84, 44, '#2a1219');                        // 城牆
+          for (let k = 0; k < 84; k += 8) r(x + w + k, 218 - 50, 5, 6, '#2a1219');
+          r(x + w + 30, 218 - 30, 4, 6, '#ff8a3a');
+        }
+      }),
+    };
+  }
+  function drawProcSky(b, alpha) {
+    const bh = VIEW_H / b.layers.sky.length;
+    b.layers.sky.forEach((col, i) => { ctx.fillStyle = col; ctx.fillRect(0, Math.floor(i * bh), viewW + 2, Math.ceil(bh) + 1); });
+    ctx.save(); ctx.imageSmoothingEnabled = false;
+    for (const [img, k] of [[b.layers.far, 0.15], [b.layers.mid, 0.35]]) {
+      const W = TW * 2, off = ((cam.x * k) % W + W) % W;
+      for (let x = -off; x < viewW; x += W) ctx.drawImage(img, x, 0, W + 1, TH * 2);
+    }
+    ctx.restore();
+  }
 
   const IMG = { player: null, boss: null, minion: null, fire: null, tiles: null, chars: null, octo: null, slime: null, ghost: null, ghostShy: null, wand: null };
 
@@ -297,7 +428,7 @@
   // ───────── 像素素材 ─────────
   // Kenney「Pixel Platformer」（CC0）：tiles.png 每格 18px、20 欄；chars.png 每格 24px、9 欄
   const TILE = { heart: 44, gem: 67, spikes: 68, qblock: 10, used: 29, flag: 111, flag2: 112, pole: 131,
-                 spring: 108, sign: 85, sprout: 124, grass: 125, tree: 126, cactus: 127, mush: 128, fenceL: 105, fence: 106 };
+                 spring: 108, sign: 85, snowman: 145, bush: 144, sprout: 124, grass: 125, tree: 126, cactus: 127, mush: 128, fenceL: 105, fence: 106 };
   const CHAR = { spike: 8, blockCalm: 11, blockMad: 12, bat: [24, 25, 26] };
   function drawSheet(img, cols, cell, i, x, y, w, h, flip = false) {
     if (!img) return;
@@ -393,7 +524,11 @@
     const n = Math.max(2, Math.floor(w * Math.min(h, 220) / 2600));
     for (let i = 0; i < n; i++) {
       const sx = rand(10, w - 10), sy = rand(30, Math.min(h, 220) - 8);
-      if (biomeKey === 'grass') {
+      if (b.stones === 'lava') {                        // 火山：發光的裂縫
+        c.fillStyle = b.stone; c.fillRect(sx, sy, rand(8, 18), 3); c.fillRect(sx + 6, sy + 3, 3, rand(4, 9));
+      } else if (b.stones === 'ice') {                   // 雪地：冰晶
+        c.fillStyle = b.stone; c.fillRect(sx, sy, 8, 8); c.fillStyle = 'rgba(255,255,255,.7)'; c.fillRect(sx + 1, sy + 1, 3, 3);
+      } else if (b.stones === 'rocks') {
         const rw = rand(6, 14), rh = rw * rand(.55, .75);
         c.beginPath(); c.ellipse(sx, sy, rw, rh, 0, 0, Math.PI * 2);
         c.fillStyle = chance(.5) ? b.stone : b.bodyDark; c.fill();
@@ -425,9 +560,12 @@
     const tufts = Math.floor(w / 110) + (chance(.5) ? 1 : 0);
     for (let i = 0; i < tufts; i++) {
       const tx = rand(14, w - 14);
-      if (biomeKey === 'grass') drawTuft(c, tx, 1, b);
-      else if (chance(.4)) drawShell(c, tx, 0, b);
-      else drawTuft(c, tx, 1, { cap: '#5fbf55', capDark: '#3f9a3c', line: b.line });
+      if (b.tuft === 'grass' || b.tuft === 'moss') drawTuft(c, tx, 1, b);
+      else if (b.tuft === 'beach') { if (chance(.4)) drawShell(c, tx, 0, b); else drawTuft(c, tx, 1, { cap: '#5fbf55', capDark: '#3f9a3c', line: b.line }); }
+    }
+    if (biomeKey === 'snow') {                           // 雪地台階下緣的冰柱
+      c.fillStyle = '#e6f3ff';
+      for (let x = 10; x < w - 10; x += rand(18, 34)) { const L = rand(6, 14); c.fillRect(x, capH - 2, 4, L); c.fillRect(x + 1, capH - 2 + L, 2, 4); }
     }
     return { canvas: oc, pad };
   }
@@ -522,8 +660,10 @@
 
   // ───────── 裝飾（不會擋路） ─────────
   function decorate(seg) {
-    const beach = seg.biome === 'beach';
-    const pool = beach ? [TILE.cactus, TILE.sprout, TILE.grass, TILE.mush] : [TILE.tree, TILE.sprout, TILE.grass, TILE.mush, TILE.fence];
+    const POOLS = { grass: [TILE.tree, TILE.sprout, TILE.grass, TILE.mush, TILE.fence], beach: [TILE.cactus, TILE.sprout, TILE.grass, TILE.mush],
+                    forest: [TILE.mush, TILE.mush, TILE.tree, TILE.sprout, TILE.grass], snow: [TILE.snowman, TILE.tree, TILE.bush], volcano: [TILE.sign] };
+    const pool = POOLS[seg.biome] || POOLS.grass;
+    if (seg.biome === 'volcano' && chance(.7)) return;
     const n = Math.floor(seg.w / 160) + (chance(.5) ? 1 : 0);
     for (let i = 0; i < n; i++) {
       const tile = pool[randi(0, pool.length - 1)], size = tile === TILE.tree || tile === TILE.cactus ? 54 : 40;
@@ -676,7 +816,7 @@
   const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'jump', KeyW: 'jump', Space: 'jump', KeyX: 'magic', KeyK: 'magic' };
   addEventListener('keydown', e => {
     const k = KEYMAP[e.code];
-    if (state === 'start') { if (e.code === 'Enter') { e.preventDefault(); startGame(); } return; }
+    if (state === 'start') { mapKey(e); return; }
     if (state === 'clear') { if (e.code === 'Enter') { e.preventDefault(); document.getElementById(document.getElementById('nextBtn').hidden ? 'againBtn' : 'nextBtn').click(); } return; }
     if (state === 'boss-wait' && e.code === 'Enter') { startChallenge(); return; }
     if (!k) return;
@@ -721,24 +861,120 @@
   // ───────── 關卡選單、過關 ─────────
   const loadLevels = () => window.ZhuyinProgress ? ZhuyinProgress.load('zhuyin-levels') : {};
   const unlocked = (lv, rec) => lv.id === 1 || !!rec[lv.endless ? 1 : lv.id - 1];
-  function renderLevels() {
-    const rec = loadLevels();
-    const next = LEVELS.find(lv => !lv.endless && !rec[lv.id] && unlocked(lv, rec));
-    const COL = ['#5aa836', '#3d8fd1', '#f08a3c', '#7b5cc4', '#c0392b', '#3b2414'];
-    document.getElementById('levels').innerHTML = LEVELS.map((lv, i) => {
-      const st = rec[lv.id] ? rec[lv.id].stars : 0, open = unlocked(lv, rec);
-      return `<button class="lv ${lv === next ? 'next' : ''}" data-id="${lv.id}" ${open ? '' : 'disabled'}>
-        <span class="no" style="background:${COL[i]}">${lv.endless ? '∞' : lv.id}</span><b>${lv.name}</b>
-        <small>${open ? lv.desc : (lv.endless ? '完成第 1 關解鎖' : '完成上一關解鎖')}</small>
-        <small>🔤 ${lv.units}</small>
-        <span class="st">${lv.endless ? (rec.endlessBest ? `最遠 ${rec.endlessBest} 公尺` : '') : '⭐'.repeat(st) + '☆'.repeat(3 - st)}</span></button>`;
-    }).join('');
+  // ───────── 世界地圖：每一關是地上的小圓圈，點了就進入 ─────────
+  const LV_COLOR = { 1: '#5aa836', 2: '#3d8fd1', 3: '#2f9e8f', 4: '#7fb2e0', 5: '#e8501a', 6: '#7b5cc4' };
+  const SEG = 240, MAP_H = 160;                         // 地圖每一關一段（像素）
+  const nodeXY = i => ({ x: SEG * i + SEG / 2, y: 126 + Math.round(Math.sin(i * 1.7) * 6) });
+  let mapSel = null;                                    // null = 自動選下一個還沒過的關卡
+  function buildMapCanvas() {
+    const c = document.getElementById('mapCanvas');
+    c.width = SEG * LEVELS.length; c.height = MAP_H;
+    const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+    LEVELS.forEach((lv, i) => {
+      const x0 = SEG * i, key = lv.biome === 'alt' ? null : lv.biome, b = key && BIOMES[key];
+      g.save(); g.beginPath(); g.rect(x0, 0, SEG, MAP_H); g.clip();
+      if (b && b.proc && b.layers) {
+        b.layers.sky.forEach((col, k) => { g.fillStyle = col; g.fillRect(x0, Math.floor(k * MAP_H / 6), SEG, Math.ceil(MAP_H / 6) + 1); });
+        const k = MAP_H / TH;
+        g.drawImage(b.layers.far, (i * 97) % (TW - SEG / k), 0, SEG / k, TH, x0, 0, SEG, MAP_H);
+        g.drawImage(b.layers.mid, (i * 53) % (TW - SEG / k), 0, SEG / k, TH, x0, 0, SEG, MAP_H);
+      } else if (b && b.img) {
+        const img = b.img, sh = img.height * BG_CROP, sw = sh * SEG / (MAP_H * 0.86);
+        g.drawImage(img, (img.width - sw) / 2, 0, sw, sh, x0, 0, SEG, MAP_H * 0.86);
+      } else {                                           // 無盡冒險：星空 + 彩虹
+        ['#120c2a', '#1a1240', '#241a55', '#2e2168', '#3a2a7a', '#47358a'].forEach((col, k) => { g.fillStyle = col; g.fillRect(x0, k * MAP_H / 6, SEG, MAP_H / 6 + 1); });
+        const R = rng(42); for (let s = 0; s < 40; s++) { g.fillStyle = s % 4 ? '#fffbe0' : '#ffcf3f'; g.fillRect(x0 + R() * SEG, R() * 100, s % 5 ? 2 : 3, s % 5 ? 2 : 3); }
+        ['#e8501a', '#f08a3c', '#ffcf3f', '#5aa836', '#3d8fd1', '#7b5cc4'].forEach((col, k) => {
+          for (let a = 0; a <= 60; a++) { const t = Math.PI * (a / 60); g.fillStyle = col; g.fillRect(x0 + SEG / 2 + Math.cos(t) * (70 - k * 5) - 2, 112 - Math.sin(t) * (70 - k * 5), 4, 4); }
+        });
+      }
+      // 地面
+      const cap = b ? b.cap : '#5a4a8a', body = b ? b.body : '#3a2a5a', line = b ? b.line : '#1a1030';
+      g.fillStyle = line; g.fillRect(x0, 112, SEG, MAP_H - 112);
+      g.fillStyle = cap; g.fillRect(x0, 114, SEG, 8);
+      g.fillStyle = body; g.fillRect(x0, 122, SEG, MAP_H - 122);
+      for (let k = 0; k < 14; k++) { g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(x0 + (k * 37 + i * 13) % SEG, 130 + (k * 23) % 26, 6, 4); }
+      if (key === 'volcano') { g.fillStyle = '#ff7a1a'; for (let k = 0; k < 5; k++) g.fillRect(x0 + 20 + k * 46, 140 + (k % 2) * 8, 16, 3); }
+      // 裝飾（Kenney 圖塊）
+      const decoTiles = { grass: [TILE.tree, TILE.mush], beach: [TILE.cactus, TILE.grass], forest: [TILE.mush, TILE.tree], snow: [TILE.snowman, TILE.tree], volcano: [TILE.sign] }[key] || [];
+      decoTiles.forEach((t, k) => IMG.tiles && g.drawImage(IMG.tiles, (t % 20) * 18, Math.floor(t / 20) * 18, 18, 18, x0 + 22 + k * 168, 96, 18, 18));
+      g.restore();
+    });
+    // 連接每一關的小路（踏腳石）
+    for (let i = 0; i < LEVELS.length - 1; i++) {
+      const a = nodeXY(i), b = nodeXY(i + 1);
+      for (let t = 0.16; t < 0.9; t += 0.09) { g.fillStyle = '#f3e3c3'; g.fillRect(Math.round(a.x + (b.x - a.x) * t) - 3, Math.round(a.y + (b.y - a.y) * t + Math.sin(t * Math.PI) * 6) - 2, 7, 4); }
+    }
   }
-  document.getElementById('levels').addEventListener('click', e => {
-    const b = e.target.closest('.lv'); if (b && !b.disabled) startLevel(+b.dataset.id);
+  function renderLevels() {
+    const rec = loadLevels(), map = document.getElementById('map');
+    map.querySelectorAll('.node, .node-stars, .node-name').forEach(n => n.remove());
+    const next = LEVELS.find(lv => !lv.endless && !rec[lv.id] && unlocked(lv, rec)) || LEVELS[0];
+    const cur = LEVELS.find(lv => lv.id === mapSel);
+    if (!cur || !unlocked(cur, rec)) mapSel = next.id;
+    LEVELS.forEach((lv, i) => {
+      const { x, y } = nodeXY(i), open = unlocked(lv, rec), st = rec[lv.id] ? rec[lv.id].stars : 0;
+      const pos = (el, dy = 0) => { el.style.left = `${x / (SEG * LEVELS.length) * 100}%`; el.style.top = `calc(${y / MAP_H * 100}% + ${dy}px)`; return el; };
+      const btn = document.createElement('button');
+      btn.className = `node px-round ${open ? '' : 'locked'} ${lv.id === mapSel ? 'sel' : ''}`;
+      btn.dataset.id = lv.id; btn.style.setProperty('--c', LV_COLOR[lv.id]);
+      btn.textContent = open ? (lv.endless ? '∞' : lv.id) : '🔒';
+      btn.title = lv.name;
+      map.appendChild(pos(btn));
+      const name = document.createElement('div'); name.className = 'node-name'; name.textContent = lv.name;
+      map.appendChild(pos(name, -70));
+      const stars = document.createElement('div'); stars.className = 'node-stars';
+      stars.textContent = lv.endless ? (rec.endlessBest ? `${rec.endlessBest} 公尺` : '') : (open ? '⭐'.repeat(st) + '☆'.repeat(3 - st) : '');
+      map.appendChild(pos(stars, 36));
+    });
+    moveKid(false); showInfo(mapSel);
+    requestAnimationFrame(() => moveKid(false));      // 版面算好之後再捲一次
+  }
+  function moveKid(smooth = true) {
+    const i = LEVELS.findIndex(lv => lv.id === mapSel), { x, y } = nodeXY(i), kid = document.getElementById('mapKid');
+    kid.style.left = `calc(${x / (SEG * LEVELS.length) * 100}% - clamp(40px, 6.5vh, 54px))`; kid.style.top = `calc(${y / MAP_H * 100}% + 18px)`;   // 站在圓圈左邊
+    document.querySelectorAll('.node').forEach(n => n.classList.toggle('sel', +n.dataset.id === mapSel));
+    const sc = document.getElementById('mapScroll'), map = document.getElementById('map');
+    sc.scrollTo({ left: x / (SEG * LEVELS.length) * map.offsetWidth - sc.clientWidth / 2, behavior: smooth ? 'smooth' : 'auto' });
+  }
+  function showInfo(id) {
+    const lv = LEVELS.find(l => l.id === id), rec = loadLevels(), open = unlocked(lv, rec), st = rec[lv.id] ? rec[lv.id].stars : 0;
+    document.getElementById('mapInfo').innerHTML = `<div class="lvno px-round" style="--c:${LV_COLOR[lv.id]}">${lv.endless ? '∞' : lv.id}</div>
+      <div><h2>${lv.endless ? '' : `第 ${lv.id} 關 `}${lv.name}</h2><p>${open ? lv.desc : (lv.endless ? '完成第 1 關就能解鎖' : '先完成上一關才能進入')}</p>
+      <p>🔤 考的注音：${lv.units}　${lv.endless ? '' : `<span class="st">${'⭐'.repeat(st)}${'☆'.repeat(3 - st)}</span>`}</p></div>
+      <button class="btn go" id="goBtn" ${open ? '' : 'disabled'}>出發！▶</button>`;
+    document.getElementById('goBtn').addEventListener('click', () => enterLevel(lv.id));
+  }
+  let entering = false;
+  function enterLevel(id) {
+    const lv = LEVELS.find(l => l.id === id);
+    if (entering || state !== 'start') return;
+    if (!unlocked(lv, loadLevels())) { window.Sfx && Sfx.play('wrong'); showInfo(id); return; }
+    entering = true;
+    const moved = mapSel !== id;
+    mapSel = id; moveKid(); showInfo(id);
+    window.Sfx && Sfx.play('select');
+    setTimeout(() => { entering = false; startLevel(id); }, moved ? 650 : 250);   // 小簡走到圓圈上再出發
+  }
+  document.getElementById('map').addEventListener('click', e => {
+    const n = e.target.closest('.node'); if (n) enterLevel(+n.dataset.id);
   });
-  function showLevelSelect() {
+  document.getElementById('map').addEventListener('mouseover', e => {
+    const n = e.target.closest('.node'); if (n) showInfo(+n.dataset.id);
+  });
+  document.getElementById('map').addEventListener('mouseleave', () => showInfo(mapSel));
+  addEventListener('resize', () => state === 'start' && moveKid(false));
+  function mapKey(e) {
+    const rec = loadLevels(), open = LEVELS.filter(lv => unlocked(lv, rec)).map(lv => lv.id);
+    const k = open.indexOf(mapSel);
+    if (e.code === 'ArrowRight' && k < open.length - 1) { mapSel = open[k + 1]; moveKid(); showInfo(mapSel); window.Sfx && Sfx.play('click'); }
+    else if (e.code === 'ArrowLeft' && k > 0) { mapSel = open[k - 1]; moveKid(); showInfo(mapSel); window.Sfx && Sfx.play('click'); }
+    else if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); enterLevel(mapSel); }
+  }
+  function showLevelSelect(afterClear = false) {
     state = 'start';
+    const nx = LEVELS.find(l => l.id === level.id + 1);
+    mapSel = afterClear && nx && unlocked(nx, loadLevels()) ? nx.id : level.id;
     keys.left = keys.right = keys.jump = false;
     clearScreen.classList.add('hidden'); bossScreen.classList.add('hidden');
     renderLevels();
@@ -784,7 +1020,7 @@
     clearScreen.classList.remove('hidden');
   }
   document.getElementById('againBtn').addEventListener('click', () => startLevel(level.id));
-  document.getElementById('mapBtn').addEventListener('click', showLevelSelect);
+  document.getElementById('mapBtn').addEventListener('click', () => showLevelSelect(true));
   document.getElementById('nextBtn').addEventListener('click', () => startLevel(level.id + 1));
   document.getElementById('lvlBtn').addEventListener('click', () => {
     if (state === 'duel') return;
@@ -1142,6 +1378,14 @@
   function drawBiomeBg(key, alpha) {
     const b = BIOMES[key], img = b.img;
     ctx.globalAlpha = alpha;
+    if (b.proc && b.layers) {
+      drawProcSky(b, alpha);
+      const g = ctx.createLinearGradient(0, BG_H - 30, 0, VIEW_H);
+      g.addColorStop(0, b.fillTop); g.addColorStop(1, b.fillBot);
+      ctx.fillStyle = g; ctx.fillRect(0, BG_H - 30, viewW + 2, VIEW_H - BG_H + 32);
+      ctx.globalAlpha = 1;
+      return;
+    }
     const g = ctx.createLinearGradient(0, BG_H - 30, 0, VIEW_H);
     g.addColorStop(0, b.fillTop); g.addColorStop(1, b.fillBot);
     ctx.fillStyle = g; ctx.fillRect(0, BG_H - 30, viewW + 2, VIEW_H - BG_H + 32);
@@ -1181,10 +1425,9 @@
 
     // 背景：依目前位置在草地 / 沙灘間淡入淡出
     const mid = cam.x + viewW / 2;
-    const seg = Math.max(0, mid) / BIOME_LEN;
-    const idx = Math.floor(seg), frac = seg - idx;
-    const cur = BIOME_ORDER[idx % BIOME_ORDER.length], nxt = BIOME_ORDER[(idx + 1) % BIOME_ORDER.length];
-    const fade = clamp((frac - 0.9) / 0.1, 0, 1);
+    const frac = (Math.max(0, mid) / BIOME_LEN) % 1;
+    const cur = biomeAt(mid), nxt = biomeAt(mid + BIOME_LEN * 0.1 + 1);
+    const fade = cur === nxt ? 0 : clamp((frac - 0.9) / 0.1, 0, 1);
     drawBiomeBg(cur, 1);
     if (fade > 0) drawBiomeBg(nxt, fade);
     if (level.tint === 'dusk') {
@@ -1402,7 +1645,7 @@
   // 每個場景的環境粒子：草原花粉、海邊泡泡、黃昏落葉、夜晚螢火蟲
   function drawAmbient() {
     const t = performance.now() / 1000, W = viewW + 80;
-    const kind = level.tint === 'night' ? 'firefly' : level.tint === 'dusk' ? 'leaf' : biomeAt(cam.x + viewW / 2) === 'beach' ? 'bubble' : 'pollen';
+    const kind = level.tint === 'night' ? 'firefly' : level.tint === 'dusk' ? 'leaf' : BIOMES[biomeAt(cam.x + viewW / 2)].ambient;
     for (let i = 0; i < 26; i++) {
       const seed = (i * 7919) % 1000 / 1000, seed2 = (i * 104729) % 1000 / 1000;
       let x, y, size, col;
@@ -1419,6 +1662,25 @@
         const glow = (Math.sin(t * 3 + i * 1.7) + 1) / 2;
         ctx.fillStyle = `rgba(220,255,120,${.25 + glow * .75})`; ctx.fillRect(x - 3, y - 3, 6, 6);
         ctx.fillStyle = `rgba(220,255,120,${glow * .25})`; ctx.fillRect(x - 7, y - 7, 14, 14);
+        continue;
+      }
+      if (kind === 'snow') {                              // 雪花
+        y = ((t * (40 + seed * 40) + seed2 * VIEW_H) % (VIEW_H + 40)) - 20;
+        x = ((seed * W - cam.x * 0.5 + Math.sin(t * 1.2 + i) * 20) % W + W) % W - 40;
+        ctx.fillStyle = 'rgba(255,255,255,.9)'; const r = i % 3 ? 4 : 6; ctx.fillRect(x, y, r, r);
+        continue;
+      }
+      if (kind === 'ember') {                             // 火山：往上飄的火星
+        y = VIEW_H - ((t * (50 + seed * 50) + seed2 * VIEW_H) % (VIEW_H + 40));
+        x = ((seed * W - cam.x * 0.4 + Math.sin(t * 2 + i) * 16) % W + W) % W - 40;
+        ctx.fillStyle = i % 3 ? 'rgba(255,150,40,.9)' : 'rgba(255,220,90,.9)'; ctx.fillRect(x, y, 4, 4);
+        continue;
+      }
+      if (kind === 'spore') {                             // 森林：發光的孢子
+        x = ((seed * W - cam.x * 0.45 + Math.sin(t * .6 + i) * 30) % W + W) % W - 40;
+        y = 100 + seed2 * 330 + Math.sin(t * 1.1 + i * 2) * 24;
+        const glow = (Math.sin(t * 2 + i * 1.3) + 1) / 2;
+        ctx.fillStyle = `rgba(180,255,220,${.35 + glow * .6})`; ctx.fillRect(x - 3, y - 3, 6, 6);
         continue;
       }
       if (kind === 'bubble') {
@@ -1547,8 +1809,10 @@
     IMG.wand = buildSprite(PIX.wand); IMG.octo = buildOctopus();
     renderBestiary();
     BIOMES.grass.img = g; BIOMES.beach.img = b;
+    for (const [k, bm] of Object.entries(BIOMES)) if (bm.proc) bm.layers = buildProcBiome(k);
     resetWorld(); resetPlayer(); renderHearts();
     generateUntil(viewW + 1200);
+    buildMapCanvas();
     renderLevels();
     if (window.Sfx) { Sfx.bindClicks(); Sfx.addToggle(document.body, 'snd-btn pixel-frame'); }
     requestAnimationFrame(frame);

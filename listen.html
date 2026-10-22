@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>聽音辨識 — 小簡的注音大冒險</title>
+<link rel="icon" href="assets/xiaojian_pixel.png">
+<link rel="stylesheet" href="css/site.css">
+<style>
+  .head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+  .head h1 { margin: 0; font-size: 30px; }
+  .head p { margin: 0; color: var(--muted); }
+  .pairs { display: flex; gap: 14px; overflow-x: auto; padding: 10px 6px 16px; scroll-snap-type: x mandatory; scrollbar-width: thin; }
+  .pairs button { flex: none; scroll-snap-align: start; cursor: pointer; border: none; color: #fff; padding: 10px 16px; margin: 4px; text-align: left; min-width: 150px;
+                  box-shadow: 0 -4px 0 var(--ink), 0 4px 0 var(--ink), -4px 0 0 var(--ink), 4px 0 0 var(--ink), 6px 6px 0 var(--shade); opacity: .72; }
+  .pairs button.on { opacity: 1; transform: translateY(-3px); }
+  .pairs button .big { font-family: var(--font-teach); font-size: 32px; line-height: 1.1; display: block; }
+  .pairs button small { font-size: 13px; }
+  .pairs button .best { display: block; font-size: 13px; }
+
+  h2.sec { margin: 26px 0 10px; font-size: 24px; display: flex; align-items: center; gap: 8px; }
+  .learn { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .side { padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .side .top { display: flex; align-items: center; gap: 16px; }
+  .side .sym { width: 110px; height: 110px; flex: none; background: #fff; font-family: var(--font-teach); font-size: 84px; line-height: 1; cursor: pointer;
+               display: flex; align-items: center; justify-content: center; margin: 4px;
+               box-shadow: 0 -4px 0 var(--ink), 0 4px 0 var(--ink), -4px 0 0 var(--ink), 4px 0 0 var(--ink); }
+  .side .tip { font-size: 17px; padding: 8px 12px; background: #fff; }
+  .words { display: flex; flex-wrap: wrap; gap: 10px; }
+  .words button { font: inherit; cursor: pointer; background: #fff; border: none; padding: 6px 12px; font-size: 20px; margin: 3px;
+                  box-shadow: 0 -3px 0 var(--ink), 0 3px 0 var(--ink), -3px 0 0 var(--ink), 3px 0 0 var(--ink); }
+  .words button b, .qword b { color: var(--orange-d); text-decoration: underline; text-underline-offset: 4px; }
+  .words button:active { transform: translateY(2px); }
+
+  .quiz { padding: 22px; text-align: center; }
+  .quiz .progress { display: flex; gap: 6px; justify-content: center; margin-bottom: 14px; }
+  .quiz .progress i { width: 22px; height: 12px; background: #f1e4cc; box-shadow: 0 0 0 2px var(--ink); }
+  .quiz .progress i.ok { background: #7ee081; } .quiz .progress i.no { background: #ff9a9a; } .quiz .progress i.now { background: #ffcf3f; }
+  .playbtn { font-size: 26px !important; padding: 14px 30px !important; }
+  .choices { display: flex; gap: 28px; justify-content: center; margin: 22px 0 12px; flex-wrap: wrap; }
+  .choice { width: 150px; height: 150px; font-family: var(--font-teach); font-size: 100px; line-height: 1; cursor: pointer; border: none; color: var(--ink); background: #fff; margin: 4px;
+            box-shadow: 0 -5px 0 var(--ink), 0 5px 0 var(--ink), -5px 0 0 var(--ink), 5px 0 0 var(--ink), 8px 8px 0 var(--shade); }
+  .choice:hover { background: #fff8e0; }
+  .choice.right { background: #b9efb0; } .choice.wrong { background: #ffc4c4; animation: shake .4s steps(4); }
+  @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+  .reveal { min-height: 70px; font-size: 24px; }
+  .reveal .qword { font-size: 34px; }
+  .reveal .emoji { font-size: 40px; vertical-align: middle; }
+  .result { font-size: 26px; padding: 12px; }
+  .result .stars { font-size: 44px; letter-spacing: 6px; }
+  @media (max-width: 720px) { .learn { grid-template-columns: 1fr; } .choice { width: 120px; height: 120px; font-size: 80px; } }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a class="brand" href="index.html"><img src="assets/xiaojian_pixel.png" alt=""><span>小簡的注音大冒險</span></a>
+  <a class="tab" href="index.html">首頁</a>
+  <a class="tab" href="game.html">冒險遊戲</a>
+  <a class="tab" href="materials.html">教材展示</a>
+  <a class="tab on" href="listen.html">聽音辨識</a>
+  <a class="tab" href="worksheet.html">學習單</a>
+</nav>
+
+<main class="wrap">
+  <div class="head">
+    <h1>🎧 聽音辨識</h1>
+    <p>有些注音聽起來很像，仔細聽、比比看嘴巴和舌頭的位置！</p>
+  </div>
+  <div class="pairs" id="pairs"></div>
+
+  <h2 class="sec">👄 學一學：哪裡不一樣？</h2>
+  <div class="learn" id="learn"></div>
+
+  <h2 class="sec">👂 聽一聽挑戰</h2>
+  <div class="card quiz" id="quiz"></div>
+</main>
+
+<script src="js/zhuyin-data.js"></script>
+<script src="js/airwriter.js"></script>
+<script src="js/progress.js"></script>
+<script src="js/sfx.js"></script>
+<script>
+(() => {
+  if (window.Sfx) { Sfx.bindClicks(); Sfx.addToggle(document.querySelector('.nav')); }
+  const $ = id => document.getElementById(id);
+  const speak = AirWriter.speak;
+  const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const PAIRS = ZHUYIN_PAIRS;
+  const q = new URLSearchParams(location.search);
+  let pair = PAIRS.find(p => p.id === q.get('pair')) || (q.get('ch') && (ZHUYIN_PAIRS_OF[q.get('ch')] || [])[0]) || PAIRS[0];
+  const under = it => [...it.word].map((c, i) => i === it.at ? `<b>${c}</b>` : c).join('');
+  const symSay = ch => { const s = ZHUYIN_INDEX[ch]; return s && s.say ? s.say : ch; };
+
+  function renderPairs() {
+    const best = ZhuyinProgress.load('zhuyin-listen');
+    $('pairs').innerHTML = PAIRS.map(p => `<button data-id="${p.id}" class="${p === pair ? 'on' : ''}" style="background:${p.color}">
+      <span class="big">${p.a}／${p.b}</span><small>${p.title}</small>
+      <span class="best">${best[p.id] ? '⭐'.repeat(best[p.id].stars) + '☆'.repeat(3 - best[p.id].stars) : '還沒挑戰'}</span></button>`).join('');
+    const on = $('pairs').querySelector('.on'); if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
+  $('pairs').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    pair = PAIRS.find(p => p.id === b.dataset.id);
+    history.replaceState(null, '', `?pair=${pair.id}`);
+    render();
+  });
+
+  function renderLearn() {
+    const side = k => {
+      const ch = pair[k], tip = k === 'a' ? pair.tipA : pair.tipB, unit = ZHUYIN_INDEX[ch].unit;
+      return `<div class="card side" style="background:${k === 'a' ? '#fff7e0' : '#eef7ff'}">
+        <div class="top"><div class="sym" data-say="${ch}" style="color:${unit.color}" title="點我聽">${ch}</div>
+          <div><b style="font-size:20px">${k === 'a' ? pair.title.split('／')[0] : pair.title.split('／')[1]}</b>
+          <div style="margin-top:6px"><button class="btn small" data-say="${ch}">🔊 聽符號</button>
+          <a class="btn small" href="materials.html?unit=${unit.id}&ch=${encodeURIComponent(ch)}">✍️ 練寫</a></div></div></div>
+        <div class="tip pixel-frame">👄 ${tip}</div>
+        <div class="words">${pair.items.filter(it => it.ans === k).map(it => `<button data-word="${it.word}">${it.emoji} ${under(it)}</button>`).join('')}</div>
+      </div>`;
+    };
+    $('learn').innerHTML = side('a') + side('b');
+  }
+  $('learn').addEventListener('click', e => {
+    const s = e.target.closest('[data-say]'); if (s) return speak(symSay(s.dataset.say));
+    const w = e.target.closest('[data-word]'); if (w) speak(w.dataset.word);
+  });
+
+  // ───────── 聽一聽挑戰：8 題，聽詞語、選出畫底線的字有哪一個注音 ─────────
+  let qs = [], qi = 0, results = [], locked = false;
+  function startQuiz() {
+    qs = shuffle(pair.items); qi = 0; results = []; locked = false;
+    showQ();
+  }
+  function showQ() {
+    const it = qs[qi];
+    const sides = shuffle(['a', 'b']);
+    $('quiz').innerHTML = `
+      <div class="progress">${qs.map((_, i) => `<i class="${i < results.length ? (results[i] ? 'ok' : 'no') : i === qi ? 'now' : ''}"></i>`).join('')}</div>
+      <div>第 ${qi + 1} / ${qs.length} 題：聽聽看，這個詞有「${pair.a}」還是「${pair.b}」？</div>
+      <div style="margin-top:12px"><button class="btn primary playbtn" id="play">🔊 聽一聽</button></div>
+      <div class="choices">${sides.map(k => `<button class="choice" data-k="${k}">${pair[k]}</button>`).join('')}</div>
+      <div class="reveal" id="reveal"></div>`;
+    $('play').addEventListener('click', () => speak(it.word, 0.8));
+    $('quiz').querySelectorAll('.choice').forEach(b => b.addEventListener('click', () => answer(b, b.dataset.k === it.ans)));
+    setTimeout(() => speak(it.word, 0.8), 300);
+  }
+  function answer(btn, ok) {
+    if (locked) return;
+    locked = true;
+    const it = qs[qi];
+    results.push(ok);
+    btn.classList.add(ok ? 'right' : 'wrong');
+    if (!ok) $('quiz').querySelector(`.choice[data-k="${it.ans}"]`).classList.add('right');
+    window.Sfx && Sfx.play(ok ? 'correct' : 'wrong');
+    $('reveal').innerHTML = `${ok ? '答對了！' : '再聽一次：'}<span class="emoji">${it.emoji}</span> <span class="qword">${under(it)}</span>
+      <span style="font-family:var(--font-teach)">（${it.word[it.at]}：${it.zy}）</span>`;
+    speak(ok ? it.word : `${it.word}，${it.word[it.at]}`, 0.8);
+    setTimeout(() => { qi++; locked = false; if (qi < qs.length) showQ(); else finish(); }, ok ? 1500 : 2600);
+  }
+  function finish() {
+    const right = results.filter(Boolean).length, total = results.length;
+    const stars = right === total ? 3 : right >= total - 2 ? 2 : right >= total / 2 ? 1 : 0;
+    ZhuyinProgress.update('zhuyin-listen', r => { if (!r[pair.id] || r[pair.id].stars < stars) r[pair.id] = { stars, right, total }; });
+    window.Sfx && Sfx.play(stars === 3 ? 'fanfare' : 'checkpoint');
+    $('quiz').innerHTML = `<div class="result"><div class="stars">${'⭐'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>
+      答對 ${right} / ${total} 題 ${stars === 3 ? '— 耳朵好靈！' : '— 再聽一次學一學，下次會更好！'}
+      <div style="margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn primary" id="again">↺ 再挑戰一次</button>
+        ${PAIRS[PAIRS.indexOf(pair) + 1] ? '<button class="btn" id="nextPair">下一組 ▶</button>' : ''}
+      </div></div>`;
+    $('again').addEventListener('click', startQuiz);
+    const nb = $('nextPair');
+    if (nb) nb.addEventListener('click', () => { pair = PAIRS[PAIRS.indexOf(pair) + 1]; history.replaceState(null, '', `?pair=${pair.id}`); render(); });
+    renderPairs();
+  }
+  function quizIntro() {
+    $('quiz').innerHTML = `<p style="font-size:20px;margin:0 0 12px">共 ${pair.items.length} 題：聽小簡念詞語，選出<b style="color:var(--orange-d)">畫底線的字</b>有哪一個注音。</p>
+      <button class="btn primary playbtn" id="go">開始挑戰 ▶</button>`;
+    $('go').addEventListener('click', startQuiz);
+  }
+
+  function render() { renderPairs(); renderLearn(); quizIntro(); }
+  render();
+  window.__listen = { startQuiz, answer: ok => { const it = qs[qi]; const b = [...document.querySelectorAll('.choice')].find(x => (x.dataset.k === it.ans) === ok); b && b.click(); }, get qi() { return qi; } };   // 測試用
+})();
+</script>
+</body>
+</html>

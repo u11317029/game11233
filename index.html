@@ -52,6 +52,39 @@
             padding: 8px 14px; font-weight: 800; font-size: 17px; box-shadow: 0 4px 0 var(--ink); }
   .speech::after { content: ""; position: absolute; right: 30px; bottom: -16px; width: 8px; height: 8px; background: var(--ink); box-shadow: 8px -8px 0 #fff, 8px -8px 0 0 #fff, -8px 8px 0 var(--ink); }
 
+  /* ───── 滾動式選單（彩色卡片，左右滑動） ───── */
+  .rail-wrap { position: relative; margin-top: -60px; z-index: 3; }
+  .rail { display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: 14px 10px 22px; scrollbar-width: none;
+          -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%);
+                  mask-image: linear-gradient(90deg, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%); }
+  .rail::-webkit-scrollbar { display: none; }
+  .tile { flex: 0 0 min(250px, 70vw); scroll-snap-align: center; text-decoration: none; color: #fff; padding: 18px 18px 16px; display: flex; flex-direction: column; gap: 4px;
+          min-height: 190px; position: relative; overflow: hidden; transition: transform .15s steps(3); background: var(--c); }
+  .tile::after { content: ""; position: absolute; right: -22px; bottom: -22px; width: 90px; height: 90px; background: rgba(255,255,255,.14); }
+  .tile:hover, .tile:focus-visible { transform: translateY(-6px); }
+  .tile .ic { font-size: 46px; line-height: 1; filter: drop-shadow(3px 3px 0 rgba(0,0,0,.2)); }
+  .tile h3 { margin: 6px 0 0; font-size: 24px; text-shadow: 2px 2px 0 rgba(0,0,0,.25); }
+  .tile p { margin: 0; font-size: 15px; opacity: .95; line-height: 1.5; }
+  .tile .new { position: absolute; right: 10px; top: 10px; background: #fff; color: var(--c); font-size: 13px; padding: 0 8px; }
+  .tile .go { margin-top: auto; font-size: 14px; opacity: .9; }
+  .rail-btn { position: absolute; top: 50%; transform: translateY(-50%); z-index: 4; width: 44px; height: 44px; font-size: 20px; padding: 0 !important; justify-content: center; }
+  .rail-btn.prev { left: -40px; } .rail-btn.next { right: -40px; }
+  .rail-btn[disabled] { visibility: hidden; }
+  @media (max-width: 1220px) { .rail-btn.prev { left: -4px; } .rail-btn.next { right: -4px; } .rail-btn { opacity: .92; } }
+  .rail-dots { display: flex; gap: 8px; justify-content: center; }
+  .rail-dots button { width: 14px; height: 14px; border: none; padding: 0; cursor: pointer; background: var(--c); opacity: .35; }
+  .rail-dots button.on { opacity: 1; transform: scale(1.25); }
+
+  /* ───── 跟著捲動的彩色章節列 ───── */
+  .chips { position: sticky; top: 64px; z-index: 15; display: flex; gap: 8px; overflow-x: auto; padding: 10px 4px; margin: 14px -4px 0; scrollbar-width: none;
+           background: rgba(255,243,214,.94); backdrop-filter: blur(2px); }
+  .chips::-webkit-scrollbar { display: none; }
+  .chips a { flex: none; text-decoration: none; padding: 4px 12px; font-size: 15px; color: var(--c); background: #fff; margin: 3px;
+             box-shadow: 0 -3px 0 var(--c), 0 3px 0 var(--c), -3px 0 0 var(--c), 3px 0 0 var(--c); }
+  .chips a.on { background: var(--c); color: #fff; }
+  [id] { scroll-margin-top: 130px; }
+  h2.sec .bar { display: inline-block; width: 12px; height: 28px; background: var(--c, var(--orange)); }
+
   /* ───── 快速入口 ───── */
   .doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-top: -54px; position: relative; z-index: 3; }
   .door { display: flex; flex-direction: column; gap: 6px; padding: 20px 22px; text-decoration: none; transition: transform .15s; }
@@ -181,6 +214,7 @@
   <a class="tab on" href="index.html">首頁</a>
   <a class="tab" href="game.html">冒險遊戲</a>
   <a class="tab" href="materials.html">教材展示</a>
+  <a class="tab" href="listen.html">聽音辨識</a>
   <a class="tab" href="worksheet.html">學習單</a>
 </nav>
 
@@ -211,27 +245,18 @@
 </header>
 
 <main class="wrap">
-  <!-- 快速入口 -->
-  <div class="doors">
-    <a class="card door mat" href="materials.html">
-      <div class="ic">📚</div><h3>教材展示</h3>
-      <p>37 個注音、10 個單元，看圖、聽音、描寫、空中寫。</p>
-      <div class="tags"><span>多模態</span><span>投影模式</span></div>
-    </a>
-    <a class="card door ws" href="worksheet.html">
-      <div class="ic">📝</div><h3>學習單</h3>
-      <p>每單元五大題，線上批改，也能 A4 列印。</p>
-      <div class="tags"><span>分單元</span><span>自動批改</span></div>
-    </a>
-    <a class="card door game" href="game.html">
-      <div class="ic">🎮</div><h3>冒險遊戲</h3>
-      <p>5 個關卡＋無盡模式，跳台階、收寶石，用手勢寫注音打敗大怪物。</p>
-      <div class="tags"><span>手勢偵測</span><span>5 關</span><span>星星評分</span></div>
-    </a>
+  <!-- 滾動式選單 -->
+  <div class="rail-wrap">
+    <button class="btn rail-btn prev" id="railPrev" aria-label="上一個">◀</button>
+    <div class="rail" id="rail"></div>
+    <button class="btn rail-btn next" id="railNext" aria-label="下一個">▶</button>
   </div>
+  <div class="rail-dots" id="railDots"></div>
+
+  <nav class="chips" id="chips" aria-label="頁面章節"></nav>
 
   <!-- 四種學習方式 -->
-  <h2 class="sec">🌈 用五種感官學注音</h2>
+  <h2 class="sec" id="senses" style="--c:#3d8fd1"><span class="bar"></span>🌈 用五種感官學注音</h2>
   <p class="sec-sub">同一個注音，用不同方式反覆接觸，記得更牢。</p>
   <div class="modes">
     <div class="card mode"><div class="big">👀</div><div><h3>看一看</h3><p>彩色大字、圖片、例詞和注音，一眼就懂。</p></div></div>
@@ -242,7 +267,7 @@
   </div>
 
   <!-- 今日注音 + 泡泡暖身 -->
-  <h2 class="sec">☀️ 每日一練</h2>
+  <h2 class="sec" id="daily" style="--c:#c9a227"><span class="bar"></span>☀️ 每日一練</h2>
   <p class="sec-sub">每天認識一個注音，再用泡泡小遊戲暖暖身。</p>
   <div class="duo">
     <div class="card today" id="today"></div>
@@ -266,7 +291,7 @@
 
   <!-- 學習進度 -->
   <section id="progress">
-    <h2 class="sec">🏅 我的學習進度</h2>
+    <h2 class="sec" style="--c:#e8634a"><span class="bar"></span>🏅 我的學習進度</h2>
     <p class="sec-sub">紀錄存在這台裝置上：在教材寫對、學習單對答案、遊戲打怪都會累積。</p>
     <div class="stats" id="stats"></div>
     <div class="badges" id="badges"></div>
@@ -275,14 +300,14 @@
 
   <!-- 單元冒險地圖 -->
   <section id="units">
-    <h2 class="sec">🗺️ 單元冒險地圖</h2>
+    <h2 class="sec" style="--c:#d0558f"><span class="bar"></span>🗺️ 單元冒險地圖</h2>
     <p class="sec-sub">從第 1 關走到第 10 關，把 37 個注音全部收集起來！</p>
     <div class="path" id="path"></div>
   </section>
 
   <!-- 教師專區 -->
   <section id="teacher">
-    <h2 class="sec">👩‍🏫 教師專區</h2>
+    <h2 class="sec" style="--c:#4a6fa5"><span class="bar"></span>👩‍🏫 教師專區</h2>
     <p class="sec-sub">一節 40 分鐘的建議流程，以及列印、設備與常見問題。</p>
     <div class="card plan">
       <b>建議一節課流程（40 分鐘）</b>
@@ -379,6 +404,47 @@
   }
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { for (let i = 0; i < 3; i++) setTimeout(spawnBubble, i * 900); setInterval(spawnBubble, 1800); }
 
+  // ───────── 滾動式選單 ─────────
+  const MENU = [
+    ['🎮', '冒險遊戲', '世界地圖選關卡，跳台階、打怪物，用手勢寫注音！', 'game.html', '#f08a3c'],
+    ['📚', '教材展示', '37 個注音、10 個單元：看圖、聽音、描寫、空中寫。', 'materials.html', '#3d8fd1'],
+    ['🎧', '聽音辨識', 'ㄣ／ㄥ、ㄌ／ㄋ、ㄓ／ㄗ…聽起來很像的注音，仔細分辨！', 'listen.html', '#7b5cc4', true],
+    ['📝', '學習單', '每單元一份，線上批改，也能 A4 列印。', 'worksheet.html', '#5aa836'],
+    ['☀️', '今日注音', '每天認識一個新的注音。', '#daily', '#c9a227'],
+    ['🫧', '泡泡暖身', '聽聲音，戳破正確的注音泡泡。', '#daily', '#2f9e8f'],
+    ['🏅', '我的進度', '看看寫對了幾個注音、拿到哪些徽章。', '#progress', '#e8634a'],
+    ['🗺️', '單元地圖', '10 個單元一路闖關。', '#units', '#d0558f'],
+    ['👩‍🏫', '教師專區', '上課流程、列印學習單、常見問題。', '#teacher', '#4a6fa5'],
+  ];
+  const rail = $('rail');
+  rail.innerHTML = MENU.map(([ic, t, d, href, c, isNew]) => `<a class="card tile" href="${href}" style="--c:${c}">
+    ${isNew ? '<span class="new">NEW</span>' : ''}<div class="ic">${ic}</div><h3>${t}</h3><p>${d}</p><span class="go">${href.startsWith('#') ? '往下看 ▼' : '進入 ▶'}</span></a>`).join('');
+  $('railDots').innerHTML = MENU.map(([, t, , , c], i) => `<button style="--c:${c}" data-i="${i}" aria-label="${t}"></button>`).join('');
+  const tiles = [...rail.children];
+  const tileW = () => tiles[0].getBoundingClientRect().width + 20;
+  $('railPrev').addEventListener('click', () => rail.scrollBy({ left: -tileW() * 2 }));
+  $('railNext').addEventListener('click', () => rail.scrollBy({ left: tileW() * 2 }));
+  $('railDots').addEventListener('click', e => { const b = e.target.closest('button'); if (b) tiles[+b.dataset.i].scrollIntoView({ inline: 'center', block: 'nearest' }); });
+  rail.addEventListener('wheel', e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { rail.scrollBy({ left: e.deltaY }); e.preventDefault(); } }, { passive: false });
+  function railState() {
+    const r = rail.getBoundingClientRect(), mid = r.left + r.width / 2;
+    let best = 0, bd = 1e9;
+    tiles.forEach((t, i) => { const b = t.getBoundingClientRect(), d = Math.abs(b.left + b.width / 2 - mid); if (d < bd) { bd = d; best = i; } });
+    [...$('railDots').children].forEach((b, i) => b.classList.toggle('on', i === best));
+    $('railPrev').disabled = rail.scrollLeft < 5;
+    $('railNext').disabled = rail.scrollLeft + rail.clientWidth > rail.scrollWidth - 5;
+  }
+  rail.addEventListener('scroll', railState); addEventListener('resize', railState); railState();
+
+  // ───────── 彩色章節列（捲到哪一段就亮哪一個） ─────────
+  const CHAPTERS = [['senses', '🌈 五種感官', '#3d8fd1'], ['daily', '☀️ 每日一練', '#c9a227'], ['progress', '🏅 我的進度', '#e8634a'],
+                    ['units', '🗺️ 單元地圖', '#d0558f'], ['teacher', '👩‍🏫 教師專區', '#4a6fa5']];
+  $('chips').innerHTML = CHAPTERS.map(([id, t, c]) => `<a href="#${id}" data-id="${id}" style="--c:${c}">${t}</a>`).join('');
+  const spy = new IntersectionObserver(es => {
+    for (const e of es) if (e.isIntersecting) $('chips').querySelectorAll('a').forEach(a => a.classList.toggle('on', a.dataset.id === e.target.id));
+  }, { rootMargin: '-140px 0px -55% 0px' });
+  CHAPTERS.forEach(([id]) => { const el = document.getElementById(id); if (el) spy.observe(el); });
+
   // ───────── 今日注音（每天換一個） ─────────
   const dayNo = Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 86400000);
   const today = ALL[dayNo % ALL.length];
@@ -467,6 +533,7 @@
     const game = ZhuyinProgress.load('zhuyin-game');
     const wu = ZhuyinProgress.load('zhuyin-warmup');
     const lv = ZhuyinProgress.load('zhuyin-levels');
+    const li = ZhuyinProgress.load('zhuyin-listen');
     const cleared = [1, 2, 3, 4, 5].filter(i => lv[i]).length;
     const learned = ALL.filter(s => mat[s.ch] > 0).length;
     const wsDone = Object.keys(ws).length;
@@ -490,6 +557,7 @@
       ['⚔️', '打怪英雄', '打敗大怪物', (game.bossWins || 0) >= 1],
       ['🫧', '順風耳', '泡泡暖身一次全對', (wu.best || 0) >= ROUNDS],
       ['🏁', '闖關高手', '冒險遊戲 5 關全部過關', cleared >= 5],
+      ['👂', '小耳朵', '聽音辨識任一組拿到 3 顆星', Object.values(li).some(r => r.stars === 3)],
     ];
     const got = BADGES.filter(b => b[3]).length;
     $('badges').innerHTML = `<div style="grid-column:1/-1;font-weight:900">🎖️ 徽章牆：已獲得 ${got} / ${BADGES.length}</div>` +
@@ -512,7 +580,7 @@
   renderProgress();
   $('resetProgress').addEventListener('click', () => {
     if (!confirm('確定要清除這台裝置上的所有學習紀錄嗎？')) return;
-    ['zhuyin-progress', 'zhuyin-ws', 'zhuyin-game', 'zhuyin-warmup', 'zhuyin-levels'].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+    ['zhuyin-progress', 'zhuyin-ws', 'zhuyin-game', 'zhuyin-warmup', 'zhuyin-levels', 'zhuyin-listen'].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
     Object.keys(warm).forEach(k => delete warm[k]); showBest();
     renderProgress();
   });

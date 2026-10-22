@@ -98,6 +98,7 @@
   <a class="tab" href="index.html">首頁</a>
   <a class="tab" href="game.html">冒險遊戲</a>
   <a class="tab on" href="materials.html">教材展示</a>
+  <a class="tab" href="listen.html">聽音辨識</a>
   <a class="tab" href="worksheet.html">學習單</a>
 </nav>
 <button class="btn exit-present" id="exitPresent">✕ 離開投影</button>
@@ -130,6 +131,7 @@
             <button class="btn" id="sayWord">🔊 聽例詞</button>
           </div>
           <div class="tip">👄 <b>發音小提示：</b><span id="tip"></span></div>
+          <div id="pairLink"></div>
         </div>
       </div>
 
@@ -211,6 +213,8 @@
     $('emoji').textContent = s.emoji;
     $('word').innerHTML = rubyHTML(s);
     $('tip').textContent = s.tip;
+    const prs = ZHUYIN_PAIRS_OF[s.ch] || [];          // 容易混淆的注音 → 聽音辨識
+    $('pairLink').innerHTML = prs.map(pr => `<a class="btn small" style="background:${pr.color};color:#fff" href="listen.html?pair=${pr.id}">🎧 容易和「${pr.a === s.ch ? pr.b : pr.a}」搞混？去聽音辨識</a>`).join(' ');
     $('guide').textContent = s.ch;
     $('guide').classList.remove('show');
     $('prevBtn').disabled = idx === 0;
