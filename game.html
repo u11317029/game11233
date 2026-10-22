@@ -479,7 +479,18 @@
     window.ZhuyinDuel.open(IMG.boss, () => defeatBoss());
   }
 
+  function saveGameRecord(extra = 0) {
+    window.ZhuyinProgress && ZhuyinProgress.update('zhuyin-game', g => {
+      g.bestDist = Math.max(g.bestDist || 0, Math.floor(Math.max(0, bestX) / 50));
+      g.bestGems = Math.max(g.bestGems || 0, gemCount);
+      g.bossWins = (g.bossWins || 0) + extra;
+    });
+  }
+  addEventListener('pagehide', () => saveGameRecord());
+  document.addEventListener('visibilitychange', () => document.hidden && saveGameRecord());
+
   function defeatBoss() {
+    saveGameRecord(1);
     boss.state = 'defeated'; boss.t = 0;
     cam.shake = 0.4;
     for (let i = 0; i < 24; i++) particles.push({ x: boss.x + boss.w / 2, y: boss.y + boss.h / 2, vx: rand(-320, 320), vy: rand(-420, -60), t: 0, life: .9, star: true });
@@ -871,6 +882,7 @@
 })();
 </script>
 
+<script src="js/progress.js"></script>
 <script src="js/airwriter.js"></script>
 <script>
 // ═════════ 注音魔法對決：手勢偵測空中寫字（共用 js/airwriter.js） ═════════

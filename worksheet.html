@@ -167,6 +167,7 @@
 
 <script src="js/zhuyin-data.js"></script>
 <script src="js/airwriter.js"></script>
+<script src="js/progress.js"></script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
@@ -325,6 +326,10 @@
     $('result').innerHTML = `答對 ${right} / ${total} 題　${'⭐'.repeat(stars)}${'☆'.repeat(3 - stars)}<br><span style="font-size:18px;color:var(--muted)">${
       stars === 3 ? '全部答對，太厲害了！可以去冒險遊戲打怪物囉！' : '錯的題目再看一次教材，下次一定更好！'}</span>`;
     speak(stars === 3 ? '全部答對，太厲害了' : `答對${right}題`);
+    ZhuyinProgress.update('zhuyin-ws', ws => {
+      const old = ws[unit.id];
+      if (!old || right / total > old.right / old.total) ws[unit.id] = { stars, right, total };
+    });
   }
   $('gradeBtn').addEventListener('click', grade);
   $('resetBtn').addEventListener('click', build);
