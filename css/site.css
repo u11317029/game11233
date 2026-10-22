@@ -1,4 +1,10 @@
 /* ═════════ 小簡的注音大冒險：網站共用樣式（入口、教材展示、學習單） ═════════ */
+/* 像素字型：俐方體11號 Cubic 11（免費字型，可自由使用與散布） */
+@font-face {
+  font-family: "Cubic 11";
+  src: url(https://cdn.jsdelivr.net/gh/ACh-K/Cubic-11@4c566f7d6cc5c05ee360fe9cff56b5da1fcafd4d/fonts/web/Cubic_11.woff2) format("woff2");
+  font-display: swap;
+}
 :root {
   --ink: #3b2414;
   --paper: #fffaeb;
@@ -10,7 +16,10 @@
   --red: #c0392b;
   --muted: #7a6450;
   --radius: 22px;
-  --font: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  --font: "Cubic 11", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  --font-teach: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;   /* 教學用大字：標準字形，筆畫才正確 */
+  --px: 4px;                 /* 像素邊框粗細 */
+  --shade: rgba(59,36,20,.28);
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -61,3 +70,77 @@ button { font: inherit; }
   .nav .brand span { display: none; }
   .nav a.tab { padding: 4px 10px; font-size: 15px; }
 }
+
+/* ═════════ 像素風 ═════════ */
+* , *::before, *::after { border-radius: 0 !important; }
+body { -webkit-font-smoothing: none; -moz-osx-font-smoothing: unset; letter-spacing: .5px;
+       background-color: var(--paper-2);
+       background-image: linear-gradient(45deg, rgba(59,36,20,.045) 25%, transparent 25%, transparent 75%, rgba(59,36,20,.045) 75%),
+                         linear-gradient(45deg, rgba(59,36,20,.045) 25%, transparent 25%, transparent 75%, rgba(59,36,20,.045) 75%);
+       background-size: 16px 16px; background-position: 0 0, 8px 8px; }
+h1, h2, h3, b, strong { font-weight: normal; }          /* 像素字型本身就夠粗，不要再加粗 */
+img.px, canvas.px, .nav .brand img { image-rendering: pixelated; image-rendering: crisp-edges; }
+.teach { font-family: var(--font-teach); }
+
+/* 像素外框（缺角）：用四個方向的硬陰影畫邊框，再加一層右下的影子 */
+.card, .btn, .unit-chip, .nav a.tab.on, .pixel-frame {
+  border: none !important;
+  box-shadow: 0 calc(-1 * var(--px)) 0 0 var(--ink), 0 var(--px) 0 0 var(--ink),
+              calc(-1 * var(--px)) 0 0 0 var(--ink), var(--px) 0 0 0 var(--ink),
+              calc(var(--px) * 2) calc(var(--px) * 2) 0 0 var(--shade) !important;
+  margin: var(--px);
+}
+.card { margin: var(--px); }
+
+/* 像素按鈕：亮邊 + 暗邊，按下去會凹 */
+.btn { position: relative; padding: 8px 18px; font-weight: normal;
+       box-shadow: 0 calc(-1 * var(--px)) 0 0 var(--ink), 0 var(--px) 0 0 var(--ink),
+                   calc(-1 * var(--px)) 0 0 0 var(--ink), var(--px) 0 0 0 var(--ink),
+                   inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 0 rgba(0,0,0,.18),
+                   inset var(--px) var(--px) 0 0 rgba(255,255,255,.55) !important; }
+.btn:hover { filter: brightness(1.05); }
+.btn:active { transform: translate(0, 2px);
+              box-shadow: 0 calc(-1 * var(--px)) 0 0 var(--ink), 0 var(--px) 0 0 var(--ink),
+                          calc(-1 * var(--px)) 0 0 0 var(--ink), var(--px) 0 0 0 var(--ink),
+                          inset var(--px) var(--px) 0 0 rgba(0,0,0,.18) !important; }
+.btn.small { padding: 4px 12px; }
+.btn.primary { background: var(--orange); }
+
+/* 導覽列 */
+.nav { border-bottom: none; box-shadow: 0 var(--px) 0 0 var(--ink), 0 calc(var(--px) * 2) 0 0 var(--shade); }
+.nav .brand { font-weight: normal; }
+.nav a.tab { font-weight: normal; border: none; padding: 6px 12px; }
+.nav a.tab:hover { background: #fff; box-shadow: 0 calc(-1 * var(--px)) 0 0 var(--ink), 0 var(--px) 0 0 var(--ink), calc(-1 * var(--px)) 0 0 0 var(--ink), var(--px) 0 0 0 var(--ink); }
+.nav a.tab.on { margin: 0 var(--px); }
+
+.unit-chip { font-weight: normal; padding: 2px 10px; }
+.ruby .zy { font-weight: normal; }
+
+/* 各頁面的方框也套用像素外框（首頁、教材、學習單、遊戲） */
+details, .bdg, .today .sym, .pond, .timeline, .speech, .story .pic .pg,
+.glyph, .pad, .symlist button, .units-bar button, .units-bar a, .modes button.mode, .tip, .gest,
+.sheet, .know > div, .opt, .match .item, .q,
+.pill, .home, .toast, .duel, .sbtn, .touch button, .prompt, .gesture {
+  border: none !important;
+  box-shadow: 0 calc(-1 * var(--px)) 0 0 var(--ink), 0 var(--px) 0 0 var(--ink),
+              calc(-1 * var(--px)) 0 0 0 var(--ink), var(--px) 0 0 0 var(--ink),
+              calc(var(--px) * 1.5) calc(var(--px) * 1.5) 0 0 var(--shade) !important;
+}
+/* 虛線框改成淡色像素框 */
+.tip, .gest, .q, .gesture { box-shadow: 0 -3px 0 0 rgba(59,36,20,.35), 0 3px 0 0 rgba(59,36,20,.35), -3px 0 0 0 rgba(59,36,20,.35), 3px 0 0 0 rgba(59,36,20,.35) !important; }
+.units-bar { padding: 8px 6px 14px !important; gap: 12px !important; }
+.symlist { gap: 14px !important; padding: 4px; }
+.opt { margin: 3px; }
+
+/* 教學用大字維持標準字形 */
+.glyph, .pad .guide, .guide, .box span, .know .sym, .today .sym, .symlist button { font-family: var(--font-teach); }
+
+/* 像素圓（階梯狀圓形）：外層是框線色，::before 是填色 */
+.px-round { position: relative; isolation: isolate; background: var(--ink) !important; border: none !important; box-shadow: none !important;
+  clip-path: polygon(30% 0, 70% 0, 70% 8%, 84% 8%, 84% 16%, 92% 16%, 92% 30%, 100% 30%, 100% 70%, 92% 70%, 92% 84%, 84% 84%, 84% 92%, 70% 92%, 70% 100%, 30% 100%, 30% 92%, 16% 92%, 16% 84%, 8% 84%, 8% 70%, 0 70%, 0 30%, 8% 30%, 8% 16%, 16% 16%, 16% 8%, 30% 8%); }
+.px-round::before { content: ""; position: absolute; inset: 4px; z-index: -1; background: var(--fill, #e6f6ff);
+  clip-path: inherit; box-shadow: inset -6px -6px 0 rgba(0,0,0,.12), inset 6px 6px 0 rgba(255,255,255,.7); }
+.modes { gap: 16px !important; }
+.know { gap: 18px !important; }
+.sheet-head img, .brand img { image-rendering: pixelated; }
+.row { gap: 12px !important; }

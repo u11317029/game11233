@@ -14,21 +14,19 @@
 
   /* ───── 主視覺 ───── */
   .hero { position: relative; overflow: hidden; border-bottom: 4px solid var(--ink); min-height: 520px;
-          background: linear-gradient(180deg, #7fd0f7 0%, #b6e6fb 62%, #fff3d6 100%); }
+          background: linear-gradient(180deg, #6cc6f5 0 22%, #82cff7 22% 40%, #9bd9f9 40% 56%, #b6e6fb 56% 72%, #d7f0fb 72% 86%, #fff3d6 86%); }
   .hero .hills { position: absolute; left: 0; right: 0; bottom: 0; height: 46%; background: url(assets/grass.png) center 78% / cover no-repeat; opacity: .9;
-                 -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 35%); mask-image: linear-gradient(180deg, transparent 0, #000 35%); }
-  .cloud { position: absolute; background: #fffaeb; border: 3px solid var(--ink); border-radius: 999px; opacity: .95; animation: drift linear infinite; }
-  .cloud::before, .cloud::after { content: ""; position: absolute; background: inherit; border: inherit; border-bottom: none; border-radius: 50%; }
+                 image-rendering: pixelated; }
+  .cloud { position: absolute; background: #fffaeb; box-shadow: 0 -4px 0 var(--ink), 0 4px 0 var(--ink), -4px 0 0 var(--ink), 4px 0 0 var(--ink); animation: drift steps(240) infinite; }
+  .cloud::before, .cloud::after { content: ""; position: absolute; background: inherit; box-shadow: 0 -4px 0 var(--ink), -4px 0 0 var(--ink), 4px 0 0 var(--ink); }
   .cloud::before { width: 46%; height: 120%; left: 14%; top: -62%; }
   .cloud::after { width: 34%; height: 95%; left: 50%; top: -42%; }
   @keyframes drift { from { transform: translateX(-30vw); } to { transform: translateX(130vw); } }
 
   .bubbles { position: absolute; inset: 0; pointer-events: none; }
-  .bubble { position: absolute; bottom: -70px; width: 58px; height: 58px; border-radius: 50%; pointer-events: auto; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; color: var(--ink);
-            background: radial-gradient(circle at 32% 28%, #fff 0 12%, rgba(255,255,255,.55) 13% 40%, rgba(255,255,255,.25) 70%);
-            border: 3px solid rgba(59,36,20,.75); box-shadow: inset -4px -6px 0 rgba(127,208,247,.45);
-            animation: rise linear forwards; user-select: none; }
+  .bubble { position: absolute; bottom: -70px; width: 58px; height: 58px; pointer-events: auto; cursor: pointer; --fill: #e9f8ff;
+            display: flex; align-items: center; justify-content: center; font-size: 28px; color: var(--ink);
+            animation: rise steps(90) forwards; user-select: none; }
   .bubble.pop { animation: popb .35s ease-out forwards !important; }
   @keyframes rise { 0% { transform: translate(0, 0); } 25% { transform: translate(18px, -26vh); } 50% { transform: translate(-14px, -52vh); }
                     75% { transform: translate(16px, -78vh); } 100% { transform: translate(0, -110vh); } }
@@ -46,13 +44,13 @@
   .hero .hint { margin-top: 12px; font-size: 14px; color: var(--muted); }
 
   .kid-wrap { position: relative; display: flex; justify-content: center; }
-  .kid { width: min(360px, 80%); cursor: pointer; filter: drop-shadow(0 8px 0 rgba(59,36,20,.18)); animation: bob 2.4s ease-in-out infinite; transform-origin: 50% 90%; }
+  .kid { width: min(360px, 80%); cursor: pointer; filter: drop-shadow(8px 8px 0 rgba(59,36,20,.18)); animation: bob 1.6s steps(4) infinite; transform-origin: 50% 90%; }
   .kid.talk { animation: wiggle .5s ease-in-out; }
-  @keyframes bob { 50% { transform: translateY(-10px); } }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
   @keyframes wiggle { 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
   .speech { position: absolute; z-index: 2; top: 2%; left: -10%; max-width: 230px; background: #fff; border: 3px solid var(--ink); border-radius: 18px;
             padding: 8px 14px; font-weight: 800; font-size: 17px; box-shadow: 0 4px 0 var(--ink); }
-  .speech::after { content: ""; position: absolute; right: 26px; bottom: -14px; border: 8px solid transparent; border-top-color: var(--ink); }
+  .speech::after { content: ""; position: absolute; right: 30px; bottom: -16px; width: 8px; height: 8px; background: var(--ink); box-shadow: 8px -8px 0 #fff, 8px -8px 0 0 #fff, -8px 8px 0 var(--ink); }
 
   /* ───── 快速入口 ───── */
   .doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-top: -54px; position: relative; z-index: 3; }
@@ -92,7 +90,7 @@
   .today { padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; background: #fff7e0; }
   .today .date { font-weight: 800; color: var(--muted); }
   .today .row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
-  .today .sym { width: 130px; height: 130px; border: 4px solid var(--ink); border-radius: 24px; background: #fff; display: flex; align-items: center; justify-content: center;
+  .today .sym { width: 130px; height: 130px; margin: 4px; background: #fff; display: flex; align-items: center; justify-content: center;
                 font-size: 100px; line-height: 1; cursor: pointer; }
   .today .emoji { font-size: 52px; }
   .today .ruby { font-size: 40px; font-weight: 900; }
@@ -103,14 +101,13 @@
   .warm .top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .warm .top h3 { margin: 0; font-size: 22px; flex: 1; }
   .warm .scoreb { font-weight: 900; }
-  .pond { position: relative; height: 230px; border: 4px solid var(--ink); border-radius: 20px; overflow: hidden;
-          background: linear-gradient(180deg, #bfe9ff, #7fd0f7); }
-  .pond .opt { position: absolute; width: 78px; height: 78px; border-radius: 50%; font-size: 40px; font-weight: 800; cursor: pointer;
-               display: flex; align-items: center; justify-content: center; color: var(--ink);
-               background: radial-gradient(circle at 32% 28%, #fff 0 12%, rgba(255,255,255,.75) 13% 45%, rgba(255,255,255,.45) 75%);
-               border: 3px solid var(--ink); animation: float 3s ease-in-out infinite; }
-  .pond .opt.right { background: #b9efb0; animation: popb .6s ease-out .3s forwards; }
-  .pond .opt.wrong { background: #ffc4c4; animation: shake .4s; }
+  .pond { position: relative; height: 230px; overflow: hidden; margin: 4px;
+          background: linear-gradient(180deg, #bfe9ff 0 25%, #a8e1fd 25% 50%, #93d8fb 50% 75%, #7fd0f7 75%); }
+  .pond .opt { position: absolute; width: 78px; height: 78px; font-size: 40px; cursor: pointer; margin: 0; padding: 0; --fill: #f2fbff;
+               display: flex; align-items: center; justify-content: center; color: var(--ink); font-family: var(--font);
+               animation: float 3s steps(6) infinite; }
+  .pond .opt.right { --fill: #b9efb0; animation: popb .6s steps(4) .3s forwards; }
+  .pond .opt.wrong { --fill: #ffc4c4; animation: shake .4s steps(4); }
   @keyframes float { 50% { transform: translateY(-12px); } }
   @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
   .pond .msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
@@ -121,10 +118,12 @@
   /* ───── 學習進度 + 徽章 ───── */
   .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
   .stat { padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
-  .ring { --p: 0; width: 66px; height: 66px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center;
-          background: conic-gradient(var(--c, var(--orange)) calc(var(--p) * 1%), #f1e4cc 0); position: relative; font-weight: 900; font-size: 15px; }
-  .ring::before { content: ""; position: absolute; inset: 9px; background: var(--paper); border-radius: 50%; }
-  .ring span { position: relative; }
+  .stat { flex-direction: column; align-items: stretch; gap: 6px; }
+  .stat .head { display: flex; align-items: baseline; gap: 8px; }
+  .stat .num { font-size: 30px; line-height: 1; color: var(--c); }
+  .segs { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; padding: 3px; background: var(--ink); }
+  .segs i { height: 12px; background: #f1e4cc; }
+  .segs i.on { background: var(--c); box-shadow: inset 0 -3px 0 rgba(0,0,0,.2), inset 0 3px 0 rgba(255,255,255,.35); }
   .stat b { display: block; font-size: 15px; }
   .stat small { color: var(--muted); }
   .badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 12px; margin-top: 16px; }
@@ -143,7 +142,7 @@
                border: 3px solid var(--ink); font-weight: 900; display: flex; align-items: center; justify-content: center; }
   .stone .syms { font-size: 28px; font-weight: 700; letter-spacing: 3px; margin-top: 8px; }
   .stone .nm { font-weight: 800; font-size: 15px; }
-  .stone .bar { height: 10px; border: 2px solid var(--ink); border-radius: 999px; background: #fff; overflow: hidden; }
+  .stone .bar { height: 14px; border: none; padding: 3px; background: var(--ink); }
   .stone .bar i { display: block; height: 100%; }
   .stone .st { font-size: 15px; min-height: 1.4em; }
   .stone .lk { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
@@ -222,7 +221,7 @@
     </div>
     <div class="kid-wrap">
       <div class="speech" id="speech">嗨！我是小簡，一起去冒險吧！</div>
-      <img class="kid" id="kid" src="assets/story/2.png" alt="拿著魔杖的小簡">
+      <img class="kid px" id="kid" src="assets/story/px-2.png" alt="拿著魔杖的小簡">
     </div>
   </div>
 </header>
@@ -268,7 +267,7 @@
     <h2 class="sec">📖 小簡的冒險故事</h2>
     <p class="sec-sub">按「🔊 念給我聽」或「▶ 自動播放」，跟著小簡一起冒險。</p>
     <div class="card story">
-      <div class="pic"><span class="pg" id="storyPg">1 / 5</span><img id="storyImg" src="assets/story/1.png" alt=""></div>
+      <div class="pic"><span class="pg" id="storyPg">1 / 5</span><img id="storyImg" class="px" src="assets/story/px-1.png" alt=""></div>
       <div class="text">
         <h3 id="storyTitle"></h3>
         <p id="storyText"></p>
@@ -408,7 +407,7 @@
   function spawnBubble() {
     if (document.hidden || bubbles.children.length > 9) return;
     const s = rand(ALL), b = document.createElement('div');
-    b.className = 'bubble'; b.textContent = s.ch; b.title = `${s.ch}：${s.word}`;
+    b.className = 'bubble px-round'; b.textContent = s.ch; b.title = `${s.ch}：${s.word}`;
     const size = 48 + Math.random() * 26;
     Object.assign(b.style, { left: (3 + Math.random() * 92) + '%', width: size + 'px', height: size + 'px', fontSize: size * 0.48 + 'px',
                              animationDuration: (11 + Math.random() * 8) + 's' });
@@ -432,7 +431,7 @@
     page = (i + STORY.length) % STORY.length;
     const img = $('storyImg');
     img.classList.add('fade');
-    setTimeout(() => { img.src = `assets/story/${page + 1}.png`; img.alt = STORY[page].t; img.classList.remove('fade'); }, 200);
+    setTimeout(() => { img.src = `assets/story/px-${page + 1}.png`; img.alt = STORY[page].t; img.classList.remove('fade'); }, 200);
     $('storyPg').textContent = `${page + 1} / ${STORY.length}`;
     $('storyTitle').textContent = STORY[page].t;
     $('storyText').innerHTML = STORY[page].p.replace(/([ㄅ-ㄩ])/g, '<span class="zy-hl">$1</span>');
@@ -491,7 +490,7 @@
     const W = pond.clientWidth, slots = shuffle([0, 1, 2, 3]);
     opts.forEach((s, k) => {
       const b = document.createElement('button');
-      b.className = 'opt'; b.textContent = s.ch;
+      b.className = 'opt px-round'; b.textContent = s.ch;
       const col = slots[k];
       b.style.left = `${14 + col * Math.max(0, (W - 28 - 78) / 3)}px`;
       b.style.top = `${30 + (col % 2) * 70 + Math.random() * 20}px`;
@@ -541,12 +540,13 @@
     const learned = ALL.filter(s => mat[s.ch] > 0).length;
     const wsDone = Object.keys(ws).length;
     const wsStars = Object.values(ws).reduce((a, w) => a + (w.stars || 0), 0);
-    const ring = (p, label, c) => `<div class="ring" style="--p:${Math.round(p)};--c:${c}"><span>${label}</span></div>`;
-    $('stats').innerHTML = `
-      <div class="card stat">${ring(learned / ALL.length * 100, `${learned}`, '#f08a3c')}<div><b>寫對的注音</b><small>共 ${ALL.length} 個</small></div></div>
-      <div class="card stat">${ring(wsDone / ZHUYIN_UNITS.length * 100, `${wsDone}`, '#5aa836')}<div><b>完成的學習單</b><small>共 ${ZHUYIN_UNITS.length} 單元・⭐ ${wsStars}</small></div></div>
-      <div class="card stat">${ring(Math.min(100, (game.bossWins || 0) * 34), `${game.bossWins || 0}`, '#c0392b')}<div><b>打敗大怪物</b><small>最遠 ${game.bestDist || 0} 公尺</small></div></div>
-      <div class="card stat">${ring((wu.best || 0) / ROUNDS * 100, `${wu.best || 0}`, '#3d8fd1')}<div><b>泡泡暖身最高分</b><small>滿分 ${ROUNDS}</small></div></div>`;
+    const segs = (p, c) => `<div class="segs">${Array.from({ length: 10 }, (_, i) => `<i class="${i < Math.round(p / 10) ? 'on' : ''}"></i>`).join('')}</div>`;
+    const stat = (p, num, title, sub, c) => `<div class="card stat" style="--c:${c}"><div class="head"><span class="num">${num}</span><b>${title}</b></div>${segs(p, c)}<small>${sub}</small></div>`;
+    $('stats').innerHTML =
+      stat(learned / ALL.length * 100, learned, '寫對的注音', `共 ${ALL.length} 個`, '#f08a3c') +
+      stat(wsDone / ZHUYIN_UNITS.length * 100, wsDone, '完成的學習單', `共 ${ZHUYIN_UNITS.length} 單元・⭐ ${wsStars}`, '#5aa836') +
+      stat(Math.min(100, (game.bossWins || 0) * 34), game.bossWins || 0, '打敗大怪物', `最遠 ${game.bestDist || 0} 公尺`, '#c0392b') +
+      stat((wu.best || 0) / ROUNDS * 100, wu.best || 0, '泡泡暖身最高分', `滿分 ${ROUNDS}`, '#3d8fd1');
 
     const BADGES = [
       ['🌱', '注音新手', '在教材寫對第 1 個注音', learned >= 1],

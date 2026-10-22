@@ -4,10 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>冒險遊戲 — 小簡的注音大冒險</title>
+<link rel="stylesheet" href="css/site.css">
 <style>
   html, body { margin: 0; height: 100%; background: #6cc6f5; overflow: hidden; }
-  body { font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; user-select: none; -webkit-user-select: none; touch-action: none; }
-  canvas { display: block; width: 100vw; height: 100vh; }
+  body { background-image: none; font-family: var(--font); user-select: none; -webkit-user-select: none; touch-action: none; }
+  canvas#game { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; image-rendering: crisp-edges; }
 
   .hud { position: fixed; top: 14px; left: 16px; display: flex; gap: 10px; pointer-events: none; }
   .pill { background: rgba(255,250,235,.92); border: 3px solid #3b2414; border-radius: 999px; padding: 6px 16px;
@@ -168,10 +169,12 @@
   const ctx = canvas.getContext('2d');
   let scale = 1, viewW = 960, dpr = 1;
 
+  // 像素風：畫面先用低解析度畫（高 PIXEL_H 點），再由瀏覽器不平滑放大
+  const PIXEL_H = 270;
   function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.round(innerWidth * dpr);
-    canvas.height = Math.round(innerHeight * dpr);
+    dpr = 1;
+    canvas.height = PIXEL_H;
+    canvas.width = Math.round(PIXEL_H * innerWidth / innerHeight);
     scale = canvas.height / VIEW_H;
     viewW = canvas.width / scale;
   }
@@ -751,7 +754,7 @@
       ctx.fillStyle = '#ffd34d'; ctx.fill();
       ctx.lineWidth = 3; ctx.strokeStyle = '#3b2414'; ctx.stroke();
       ctx.beginPath(); ctx.arc(-4, -5, 5, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.fill();
-      ctx.fillStyle = '#7a3b10'; ctx.font = 'bold 19px "PingFang TC","Noto Sans TC",sans-serif';
+      ctx.fillStyle = '#7a3b10'; ctx.font = '22px "Cubic 11","PingFang TC",sans-serif';
       ctx.fillText(c.ch, 0, 1.5);
       ctx.restore();
     }
@@ -788,7 +791,7 @@
         ctx.restore();
       }
       if (boss.state === 'idle' && boss.x - cam.x < viewW + 40) {
-        ctx.fillStyle = '#c0392b'; ctx.font = '900 30px "PingFang TC","Noto Sans TC",sans-serif';
+        ctx.fillStyle = '#c0392b'; ctx.font = '30px "Cubic 11","PingFang TC",sans-serif';
         ctx.fillText('!', boss.x + boss.w * 0.4, boss.y - 18 + Math.sin(boss.t * 5) * 4);
       }
     }
@@ -816,7 +819,7 @@
     for (const q of popups) {
       const k = q.t / 1.1;
       ctx.globalAlpha = 1 - k * k;
-      ctx.font = `900 ${(q.small ? 22 : 34) + k * 10}px "PingFang TC","Noto Sans TC",sans-serif`;
+      ctx.font = `${(q.small ? 22 : 34) + k * 10}px "Cubic 11","PingFang TC",sans-serif`;
       ctx.lineWidth = 6; ctx.strokeStyle = '#fffaeb';
       ctx.strokeText(q.text, q.x, q.y - 30 - k * 50);
       ctx.fillStyle = '#d0552b';
