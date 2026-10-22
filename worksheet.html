@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>學習單 — 小簡的注音大冒險</title>
+<link rel="stylesheet" href="css/site.css">
+<style>
+  .units-bar { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 14px; }
+  .units-bar a { flex: none; text-decoration: none; border: 3px solid var(--ink); border-radius: 999px; background: #fff; padding: 4px 14px; font-weight: 800; white-space: nowrap; }
+  .units-bar a.on { color: #fff; box-shadow: 0 3px 0 var(--ink); }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+
+  .sheet { background: #fff; border: 4px solid var(--ink); border-radius: 18px; box-shadow: 0 6px 0 var(--ink); padding: 26px 30px; max-width: 900px; margin: 0 auto; }
+  .sheet-head { display: flex; align-items: center; gap: 16px; border-bottom: 4px double var(--ink); padding-bottom: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+  .sheet-head img { width: 64px; image-rendering: pixelated; }
+  .sheet-head h1 { margin: 0; font-size: 28px; line-height: 1.3; }
+  .sheet-head h1 small { display: block; font-size: 16px; color: var(--muted); font-weight: 700; }
+  .fields { margin-left: auto; display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; align-items: end; font-weight: 800; }
+  .fields input { font: inherit; font-weight: 500; border: none; border-bottom: 2px solid var(--ink); width: 130px; background: transparent; padding: 0 4px; }
+  .score { font-size: 22px; font-weight: 900; color: var(--orange-d); min-height: 1em; }
+
+  section.part { margin-top: 22px; break-inside: avoid; }
+  section.part h2 { margin: 0 0 4px; font-size: 22px; display: flex; align-items: center; gap: 8px; }
+  section.part h2 .no { background: var(--ink); color: #fff; border-radius: 10px; padding: 0 10px; font-size: 18px; }
+  section.part .how { margin: 0 0 10px; color: var(--muted); }
+
+  /* 一、認一認 */
+  .know { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .know > div { border: 3px solid var(--ink); border-radius: 16px; padding: 8px; text-align: center; background: var(--paper); }
+  .know .sym { font-size: 56px; font-weight: 700; line-height: 1.1; }
+  .know .pic { font-size: 34px; }
+  .know .ruby { font-size: 26px; }
+  .know button { margin-top: 4px; }
+
+  /* 二、描一描（田字格） */
+  .trace-row { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+  .box { position: relative; width: 74px; height: 74px; border: 2px solid var(--ink); background: #fff;
+         background-image: linear-gradient(rgba(192,57,43,.35) 1px, transparent 1px), linear-gradient(90deg, rgba(192,57,43,.35) 1px, transparent 1px);
+         background-size: 50% 50%; background-position: center; }
+  .box span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 58px; line-height: 1; pointer-events: none; }
+  .box.model span { color: var(--ink); }
+  .box.light span { color: rgba(59,36,20,.2); }
+  .box canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+
+  /* 選項（聽一聽、圈一圈） */
+  .qs { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 10px 18px; }
+  .q { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: 2px dashed rgba(59,36,20,.3); border-radius: 14px; }
+  .q .n { font-weight: 900; min-width: 1.6em; }
+  .q .say { white-space: nowrap; }
+  .q .pic { font-size: 34px; }
+  .q .w { font-size: 24px; font-weight: 800; white-space: nowrap; }
+  .q .w b { color: var(--orange-d); text-decoration: underline; text-underline-offset: 4px; }
+  .opts { display: flex; gap: 6px; margin-left: auto; }
+  .opt { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 3px solid var(--ink); background: #fff; font-size: 26px; font-weight: 700; cursor: pointer; }
+  .opt.pick { background: #ffe08a; }
+  .opt.right { background: #b9efb0; }
+  .opt.wrong { background: #ffc4c4; }
+  .mark { font-size: 24px; width: 1.2em; }
+
+  /* 五、連一連 */
+  .match { position: relative; display: flex; justify-content: space-between; gap: 40px; padding: 0 10px; }
+  .match .col { display: flex; flex-direction: column; gap: 12px; z-index: 1; }
+  .match .item { display: flex; align-items: center; gap: 10px; cursor: pointer; background: #fff; border: 3px solid var(--ink); border-radius: 16px; padding: 0 12px; min-width: 120px; height: 58px; }
+  .match .item.sel { background: #ffe08a; }
+  .match .item.right { background: #b9efb0; } .match .item.wrong { background: #ffc4c4; }
+  .match .left .item { font-size: 24px; font-weight: 800; }
+  .match .right .item { font-size: 34px; font-weight: 700; justify-content: center; min-width: 70px; }
+  .match .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--ink); flex: none; }
+  .match svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+  .print-note { display: none; }
+  .done-bar { margin-top: 24px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .result { text-align: center; font-size: 24px; font-weight: 900; margin-top: 12px; min-height: 1.2em; }
+
+  @media (max-width: 640px) {
+    .sheet { padding: 16px; }
+    .fields { margin-left: 0; }
+    .box { width: 58px; height: 58px; } .box span { font-size: 46px; }
+    .match { gap: 10px; }
+  }
+
+  /* 列印：A4 白底，只留學習單 */
+  @page { size: A4; margin: 12mm; }
+  @media print {
+    body { background: #fff; }
+    .nav, .units-bar, .actions, .done-bar, .result, .no-print, .know button, .q button.say { display: none !important; }
+    .wrap { padding: 0; max-width: none; }
+    .sheet { border: none; box-shadow: none; padding: 0; max-width: none; }
+    .print-note { display: block; }
+    .opt { width: 38px; height: 38px; font-size: 22px; }
+    .opt.pick, .opt.right, .opt.wrong, .match .item.sel, .match .item.right, .match .item.wrong { background: #fff; }
+  }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a class="brand" href="index.html"><img src="assets/xiaojian_pixel.png" alt=""><span>小簡的注音大冒險</span></a>
+  <a class="tab" href="index.html">首頁</a>
+  <a class="tab" href="game.html">冒險遊戲</a>
+  <a class="tab" href="materials.html">教材展示</a>
+  <a class="tab on" href="worksheet.html">學習單</a>
+</nav>
+
+<main class="wrap">
+  <div class="units-bar" id="unitsBar"></div>
+  <div class="actions">
+    <a class="btn small" id="toMaterials" href="materials.html">📚 本單元教材</a>
+    <button class="btn small" id="shuffleBtn">🔀 換一份題目</button>
+    <button class="btn small" id="printBtn">🖨️ 列印學習單</button>
+  </div>
+
+  <article class="sheet" id="sheet">
+    <header class="sheet-head">
+      <img src="assets/xiaojian_pixel.png" alt="">
+      <h1 id="title"></h1>
+      <div class="fields">
+        <label for="fName">姓名</label><input id="fName">
+        <label for="fClass">班級</label><input id="fClass">
+        <label for="fDate">日期</label><input id="fDate">
+      </div>
+    </header>
+
+    <section class="part">
+      <h2><span class="no">一</span>認一認</h2>
+      <p class="how">看圖、念念看，認識這個單元的注音。</p>
+      <div class="know" id="know"></div>
+    </section>
+
+    <section class="part">
+      <h2><span class="no">二</span>描一描</h2>
+      <p class="how">先看黑色的字，再照著淡淡的字描，最後自己寫兩個。</p>
+      <div id="trace"></div>
+    </section>
+
+    <section class="part">
+      <h2><span class="no">三</span>聽一聽</h2>
+      <p class="how no-print">按 🔊 聽聲音，選出你聽到的注音。</p>
+      <p class="how print-note">（老師念，學生圈出聽到的注音）</p>
+      <div class="qs" id="listen"></div>
+    </section>
+
+    <section class="part">
+      <h2><span class="no">四</span>圈一圈</h2>
+      <p class="how">畫底線的字，有哪一個注音？把它圈出來。</p>
+      <div class="qs" id="circle"></div>
+    </section>
+
+    <section class="part">
+      <h2><span class="no">五</span>連一連</h2>
+      <p class="how no-print">畫底線的字有哪一個注音？先點左邊的圖，再點右邊的注音，把它們連起來。</p>
+      <p class="how print-note">（用筆把圖和畫底線的字的注音連起來）</p>
+      <div class="match" id="match">
+        <svg id="matchSvg"></svg>
+        <div class="col left" id="matchL"></div>
+        <div class="col right" id="matchR"></div>
+      </div>
+    </section>
+
+    <div class="done-bar">
+      <button class="btn primary" id="gradeBtn">✅ 寫好了，對答案</button>
+      <button class="btn" id="resetBtn">↺ 重新作答</button>
+    </div>
+    <div class="result" id="result"></div>
+  </article>
+</main>
+
+<script src="js/zhuyin-data.js"></script>
+<script src="js/airwriter.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const speak = AirWriter.speak;
+  const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const NUM = '①②③④⑤⑥⑦⑧⑨⑩';
+
+  const q = new URLSearchParams(location.search);
+  const unit = ZHUYIN_UNITS.find(u => u.id === +q.get('unit')) || ZHUYIN_UNITS[0];
+  const ALL = ZHUYIN_UNITS.flatMap(u => u.symbols);
+  let graded = false;
+  let answers = {};     // 題號 → 選的答案
+  let pairs = {};       // 連一連：左邊符號 → 右邊符號
+
+  $('unitsBar').innerHTML = ZHUYIN_UNITS.map(u =>
+    `<a href="?unit=${u.id}" class="${u === unit ? 'on' : ''}" style="${u === unit ? `background:${u.color}` : ''}">${u.id}. ${u.name}</a>`).join('');
+  $('toMaterials').href = `materials.html?unit=${unit.id}`;
+  $('title').innerHTML = `單元 ${unit.id} 學習單：${unit.name}<small>${unit.symbols.map(s => s.ch).join('　')}</small>`;
+  document.title = `單元 ${unit.id} 學習單 — 小簡的注音大冒險`;
+  $('fDate').value = new Date().toLocaleDateString('zh-TW');
+
+  const rubyHTML = s => zhuyinRuby(s);
+  const sayOf = s => s.say ? `${s.say}，${s.word}` : s.word;
+
+  // ───────── 一、認一認 ─────────
+  $('know').innerHTML = unit.symbols.map(s => `
+    <div><div class="sym" style="color:${unit.color}">${s.ch}</div><div class="pic">${s.emoji}</div>
+      <div class="ruby">${rubyHTML(s)}</div>
+      <button class="btn small" data-say="${s.ch}">🔊</button></div>`).join('');
+  $('know').addEventListener('click', e => { const b = e.target.closest('[data-say]'); if (b) speak(sayOf(ZHUYIN_INDEX[b.dataset.say])); });
+
+  // ───────── 二、描一描（每格都能直接用手指 / 滑鼠寫） ─────────
+  $('trace').innerHTML = unit.symbols.map(s => `<div class="trace-row">
+      <div class="box model"><span>${s.ch}</span></div>
+      ${`<div class="box light"><span>${s.ch}</span><canvas></canvas></div>`.repeat(3)}
+      ${'<div class="box"><canvas></canvas></div>'.repeat(2)}
+    </div>`).join('');
+  document.querySelectorAll('.box canvas').forEach(cv => {
+    const g = cv.getContext('2d'); let drawing = false;
+    const fit = () => { const r = cv.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2); cv.width = r.width * d; cv.height = r.height * d; };
+    fit();
+    const p = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height]; };
+    cv.addEventListener('pointerdown', e => {
+      drawing = true; cv.setPointerCapture(e.pointerId);
+      g.lineWidth = cv.width / 16; g.lineCap = g.lineJoin = 'round'; g.strokeStyle = '#3b2414';
+      g.beginPath(); g.moveTo(...p(e)); g.lineTo(...p(e)); g.stroke();
+    });
+    cv.addEventListener('pointermove', e => { if (drawing) { g.lineTo(...p(e)); g.stroke(); } });
+    cv.addEventListener('pointerup', () => drawing = false);
+    cv.addEventListener('dblclick', () => g.clearRect(0, 0, cv.width, cv.height));   // 點兩下擦掉
+  });
+
+  // ───────── 三、四、五：可評分的題目 ─────────
+  let listenQs = [], circleQs = [], matchItems = [];
+
+  function build() {
+    graded = false; answers = {}; pairs = {};
+    $('result').textContent = '';
+
+    // 三、聽一聽：選項 = 本單元全部符號
+    listenQs = shuffle(unit.symbols).map((s, i) => ({ id: 'L' + i, ans: s.ch, s, opts: shuffle(unit.symbols.map(x => x.ch)) }));
+    $('listen').innerHTML = listenQs.map((qq, i) => `
+      <div class="q" data-q="${qq.id}"><span class="n">${NUM[i]}</span>
+        <button class="btn small say" data-say="${qq.ans}">🔊 聽</button>
+        <div class="opts">${qq.opts.map(o => `<button class="opt" data-o="${o}">${o}</button>`).join('')}</div>
+        <span class="mark"></span></div>`).join('');
+
+    // 四、圈一圈：畫底線的字有哪一個注音（選項 3 個，不夠就從相鄰單元補）
+    const neighbors = ALL.filter(x => !unit.symbols.includes(x));
+    circleQs = shuffle(unit.symbols).map((s, i) => {
+      let pool = unit.symbols.filter(x => x !== s && !s.reading[s.at].includes(x.ch));
+      if (pool.length < 2) pool = pool.concat(shuffle(neighbors.filter(x => !s.reading[s.at].includes(x.ch))).slice(0, 2 - pool.length));
+      const opts = shuffle([s.ch, ...shuffle(pool).slice(0, 2).map(x => x.ch)]);
+      return { id: 'C' + i, ans: s.ch, s, opts };
+    });
+    $('circle').innerHTML = circleQs.map((qq, i) => {
+      const w = [...qq.s.word].map((c, k) => k === qq.s.at ? `<b>${c}</b>` : c).join('');
+      return `<div class="q" data-q="${qq.id}"><span class="n">${NUM[i]}</span><span class="pic">${qq.s.emoji}</span><span class="w">${w}</span>
+        <div class="opts">${qq.opts.map(o => `<button class="opt" data-o="${o}">${o}</button>`).join('')}</div>
+        <span class="mark"></span></div>`;
+    }).join('');
+
+    // 五、連一連：畫底線的字 ↔ 它的注音（底線字只含本單元的一個符號，不會有兩個答案）
+    matchItems = unit.symbols;
+    const under = s => [...s.word].map((c, k) => k === s.at ? `<b style="color:var(--orange-d);text-decoration:underline;text-underline-offset:4px">${c}</b>` : c).join('');
+    $('matchL').innerHTML = shuffle(matchItems).map(s => `<div class="item" data-l="${s.ch}"><span>${s.emoji} ${under(s)}</span><span class="dot" style="margin-left:auto"></span></div>`).join('');
+    $('matchR').innerHTML = shuffle(matchItems).map(s => `<div class="item" data-r="${s.ch}"><span class="dot"></span>${s.ch}</div>`).join('');
+    drawLines();
+  }
+
+  // 選擇題作答
+  function pick(qid, o) {
+    if (graded) return;
+    answers[qid] = o;
+    const row = document.querySelector(`[data-q="${qid}"]`);
+    row.querySelectorAll('.opt').forEach(b => b.classList.toggle('pick', b.dataset.o === o));
+  }
+  ['listen', 'circle'].forEach(id => $(id).addEventListener('click', e => {
+    const say = e.target.closest('[data-say]');
+    if (say) return speak(sayOf(ZHUYIN_INDEX[say.dataset.say]));
+    const opt = e.target.closest('.opt'); if (!opt) return;
+    pick(opt.closest('.q').dataset.q, opt.dataset.o);
+  }));
+
+  // 連一連
+  let selL = null;
+  $('match').addEventListener('click', e => {
+    if (graded) return;
+    const l = e.target.closest('[data-l]'), r = e.target.closest('[data-r]');
+    if (l) {
+      selL = l.dataset.l === selL ? null : l.dataset.l;
+      document.querySelectorAll('[data-l]').forEach(x => x.classList.toggle('sel', x.dataset.l === selL));
+    } else if (r && selL) {
+      for (const k in pairs) if (pairs[k] === r.dataset.r) delete pairs[k];   // 一個注音只能連一條
+      pairs[selL] = r.dataset.r; selL = null;
+      document.querySelectorAll('[data-l]').forEach(x => x.classList.remove('sel'));
+      drawLines();
+    }
+  });
+  function drawLines() {
+    const box = $('match').getBoundingClientRect(), svg = $('matchSvg');
+    svg.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+    svg.innerHTML = Object.entries(pairs).map(([lch, rch]) => {
+      const a = document.querySelector(`[data-l="${lch}"] .dot`).getBoundingClientRect();
+      const b = document.querySelector(`[data-r="${rch}"] .dot`).getBoundingClientRect();
+      const col = !graded ? '#f08a3c' : (lch === rch ? '#2e9d4a' : '#c0392b');
+      return `<line x1="${a.left + a.width / 2 - box.left}" y1="${a.top + a.height / 2 - box.top}" x2="${b.left + b.width / 2 - box.left}" y2="${b.top + b.height / 2 - box.top}"
+                stroke="${col}" stroke-width="5" stroke-linecap="round"/>`;
+    }).join('');
+  }
+  addEventListener('resize', drawLines);
+
+  // ───────── 對答案 ─────────
+  function grade() {
+    graded = true;
+    let right = 0, total = 0;
+    for (const qq of [...listenQs, ...circleQs]) {
+      total++;
+      const row = document.querySelector(`[data-q="${qq.id}"]`), got = answers[qq.id];
+      const ok = got === qq.ans; if (ok) right++;
+      row.querySelectorAll('.opt').forEach(b => {
+        b.classList.remove('pick');
+        if (b.dataset.o === qq.ans) b.classList.add('right');
+        else if (b.dataset.o === got) b.classList.add('wrong');
+      });
+      row.querySelector('.mark').textContent = ok ? '✔️' : '❌';
+    }
+    for (const s of matchItems) {
+      total++;
+      const ok = pairs[s.ch] === s.ch; if (ok) right++;
+      document.querySelector(`[data-l="${s.ch}"]`).classList.add(ok ? 'right' : 'wrong');
+    }
+    drawLines();
+    const ratio = right / total;
+    const stars = ratio === 1 ? 3 : ratio >= 0.7 ? 2 : ratio >= 0.4 ? 1 : 0;
+    $('result').innerHTML = `答對 ${right} / ${total} 題　${'⭐'.repeat(stars)}${'☆'.repeat(3 - stars)}<br><span style="font-size:18px;color:var(--muted)">${
+      stars === 3 ? '全部答對，太厲害了！可以去冒險遊戲打怪物囉！' : '錯的題目再看一次教材，下次一定更好！'}</span>`;
+    speak(stars === 3 ? '全部答對，太厲害了' : `答對${right}題`);
+  }
+  $('gradeBtn').addEventListener('click', grade);
+  $('resetBtn').addEventListener('click', build);
+  $('shuffleBtn').addEventListener('click', build);
+  $('printBtn').addEventListener('click', () => print());
+
+  build();
+  window.__ws = { grade, build, pick, get listenQs() { return listenQs; }, get circleQs() { return circleQs; }, get matchItems() { return matchItems; }, pairs: () => pairs, setPairs: p => { pairs = p; drawLines(); } };   // 測試用
+})();
+</script>
+</body>
+</html>

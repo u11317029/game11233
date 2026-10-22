@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>教材展示 — 小簡的注音大冒險</title>
+<link rel="stylesheet" href="css/site.css">
+<style>
+  .units-bar { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 12px; scrollbar-width: thin; }
+  .units-bar button { flex: none; cursor: pointer; border: 3px solid var(--ink); border-radius: 999px; background: #fff; padding: 4px 14px;
+                      font-weight: 800; white-space: nowrap; }
+  .units-bar button.on { color: #fff; box-shadow: 0 3px 0 var(--ink); }
+
+  .layout { display: grid; grid-template-columns: 170px 1fr; gap: 20px; align-items: start; }
+  .symlist { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; position: sticky; top: 80px; }
+  .symlist button { aspect-ratio: 1; font-size: 38px; font-weight: 700; cursor: pointer; background: #fff; border: 3px solid var(--ink);
+                    border-radius: 18px; box-shadow: 0 4px 0 var(--ink); position: relative; }
+  .symlist button.on { color: #fff; }
+  .symlist button .done { position: absolute; right: 4px; top: 0; font-size: 16px; }
+  .unit-title { grid-column: 1 / -1; font-weight: 900; font-size: 15px; }
+
+  .detail { padding: 20px 22px; }
+  .detail-top { display: grid; grid-template-columns: auto 1fr; gap: 22px; align-items: center; }
+  .glyph { width: 190px; height: 190px; border: 4px solid var(--ink); border-radius: 26px; background: #fff;
+           display: flex; align-items: center; justify-content: center; font-size: 150px; font-weight: 600; line-height: 1; position: relative;
+           background-image: linear-gradient(rgba(192,57,43,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(192,57,43,.18) 1px, transparent 1px);
+           background-size: 50% 50%; background-position: center; }
+  .glyph.pop { animation: pop .4s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes pop { from { transform: scale(.7); } to { transform: none; } }
+  .info { display: flex; flex-direction: column; gap: 10px; }
+  .info .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .emoji { font-size: 70px; line-height: 1; }
+  .word { font-size: 52px; font-weight: 900; }
+  .tip { background: #fff; border: 3px dashed var(--muted); border-radius: 16px; padding: 8px 14px; font-size: 18px; }
+  .tip b { color: var(--orange-d); }
+
+  .practice { margin-top: 20px; border-top: 3px dashed rgba(59,36,20,.25); padding-top: 16px; }
+  .modes { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+  .modes button.mode { cursor: pointer; font-weight: 800; font-size: 17px; border: 3px solid var(--ink); border-radius: 999px; padding: 5px 16px; background: #fff; }
+  .modes button.mode.on { background: var(--ink); color: #fff; }
+  .modes .hint { color: var(--muted); font-size: 14px; }
+  .pbody { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(220px, 1fr); gap: 16px; align-items: start; }
+  .pad { position: relative; aspect-ratio: 4 / 3; border: 4px solid var(--ink); border-radius: 18px; overflow: hidden; touch-action: none; background: #fff; }
+  .pad.trace { background-color: #fff;
+               background-image: linear-gradient(rgba(192,57,43,.22) 2px, transparent 2px), linear-gradient(90deg, rgba(192,57,43,.22) 2px, transparent 2px);
+               background-size: 50% 50%; background-position: center; }
+  .pad.air { background: #23364a; }
+  .pad video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; transform: scaleX(-1); opacity: .55; display: none; }
+  .pad canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
+  .pad .guide { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;
+                font-size: min(24vw, 250px); line-height: 1; transition: opacity .3s; }
+  .pad.trace .guide { color: rgba(59,36,20,.16); }
+  .pad.air .guide { color: rgba(255,255,255,.18); opacity: 0; }
+  .pad.air .guide.show { opacity: 1; }
+  .pad .status { position: absolute; left: 10px; right: 10px; bottom: 8px; color: #fff; font-weight: 700; font-size: 15px; text-shadow: 0 1px 3px #000; pointer-events: none; }
+  .pad.trace .status { display: none; }
+  .side { display: flex; flex-direction: column; gap: 10px; }
+  .side .gest { font-size: 15px; background: #eef7ff; border: 2px dashed #6a9cc6; border-radius: 12px; padding: 8px 10px; line-height: 1.7; }
+  .side .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .feedback { min-height: 40px; font-size: 22px; font-weight: 900; }
+  .feedback.ok { color: var(--green); } .feedback.bad { color: var(--red); }
+  .stars { font-size: 26px; letter-spacing: 2px; }
+
+  .pager { display: flex; justify-content: space-between; margin-top: 18px; gap: 10px; }
+
+  /* 投影模式：給老師在大螢幕上帶全班 */
+  body.present .nav, body.present .units-bar, body.present .symlist, body.present .practice, body.present .page-head { display: none; }
+  body.present .layout { grid-template-columns: 1fr; }
+  body.present .wrap { max-width: none; padding-top: 3vh; }
+  body.present .detail { min-height: 90vh; display: flex; flex-direction: column; justify-content: center; }
+  body.present .detail-top { gap: 5vw; }
+  body.present .glyph { width: 38vh; height: 38vh; font-size: 30vh; }
+  body.present .emoji { font-size: 14vh; }
+  body.present .word { font-size: 11vh; }
+  body.present .tip { font-size: 3.2vh; }
+  .exit-present { display: none; position: fixed; top: 12px; right: 12px; z-index: 30; }
+  body.present .exit-present { display: inline-flex; }
+
+  .layout > *, .pbody > * { min-width: 0; }
+  @media (max-width: 760px) {
+    .layout { grid-template-columns: minmax(0, 1fr); }
+    .page-head > span:nth-of-type(1) { display: none; }
+    .page-head > span:last-child { margin-left: 0 !important; }
+    .tip { font-size: 16px; }
+    .symlist { position: static; grid-template-columns: repeat(5, 1fr); }
+    .symlist button { font-size: 28px; }
+    .detail-top { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+    .info .row { justify-content: center; }
+    .glyph { width: 150px; height: 150px; font-size: 118px; }
+    .word { font-size: 40px; }
+    .pbody { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a class="brand" href="index.html"><img src="assets/xiaojian_pixel.png" alt=""><span>小簡的注音大冒險</span></a>
+  <a class="tab" href="index.html">首頁</a>
+  <a class="tab" href="game.html">冒險遊戲</a>
+  <a class="tab on" href="materials.html">教材展示</a>
+  <a class="tab" href="worksheet.html">學習單</a>
+</nav>
+<button class="btn exit-present" id="exitPresent">✕ 離開投影</button>
+
+<main class="wrap">
+  <div class="page-head" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+    <h1 style="margin:0;font-size:30px">📚 教材展示</h1>
+    <span style="color:var(--muted)">看一看 · 聽一聽 · 描一描 · 空中寫</span>
+    <span style="margin-left:auto;display:flex;gap:8px">
+      <a class="btn small" id="toWorksheet" href="worksheet.html">📝 本單元學習單</a>
+      <button class="btn small primary" id="presentBtn">📺 投影模式</button>
+    </span>
+  </div>
+  <div class="units-bar" id="unitsBar"></div>
+
+  <div class="layout">
+    <div class="symlist" id="symlist"></div>
+
+    <section class="card detail" id="detail">
+      <div class="detail-top">
+        <div class="glyph" id="glyph"></div>
+        <div class="info">
+          <div><span class="unit-chip" id="unitChip"></span></div>
+          <div class="row">
+            <span class="emoji" id="emoji"></span>
+            <span class="word ruby" id="word"></span>
+          </div>
+          <div class="row">
+            <button class="btn" id="saySym">🔊 聽符號</button>
+            <button class="btn" id="sayWord">🔊 聽例詞</button>
+          </div>
+          <div class="tip">👄 <b>發音小提示：</b><span id="tip"></span></div>
+        </div>
+      </div>
+
+      <div class="practice">
+        <div class="modes">
+          <button class="mode on" data-mode="trace">✍️ 描一描</button>
+          <button class="mode" data-mode="air">☝️ 空中寫</button>
+          <span class="hint" id="modeHint">用滑鼠或手指，照著淡淡的字描寫</span>
+        </div>
+        <div class="pbody">
+          <div class="pad trace" id="pad">
+            <video id="cam" playsinline muted></video>
+            <div class="guide" id="guide"></div>
+            <canvas id="padCanvas"></canvas>
+            <div class="status" id="camStatus"></div>
+          </div>
+          <div class="side">
+            <div class="gest" id="gest" hidden>☝️ 只伸出<b>食指</b>：寫字<br>🖐️ <b>張開手掌</b>停一下：檢查<br>✊ <b>握拳</b>停一下：擦掉重寫</div>
+            <div class="buttons">
+              <button class="btn" id="clearBtn">擦掉</button>
+              <button class="btn" id="hintBtn" hidden>提示</button>
+              <button class="btn primary" id="checkBtn">檢查 ✓</button>
+            </div>
+            <div class="feedback" id="feedback"></div>
+            <div class="stars" id="stars"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pager">
+        <button class="btn" id="prevBtn">◀ 上一個</button>
+        <button class="btn" id="nextBtn">下一個 ▶</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script src="js/zhuyin-data.js"></script>
+<script src="js/airwriter.js"></script>
+<script>
+(() => {
+  const { Recognizer, Pad, speak } = AirWriter;
+  const $ = id => document.getElementById(id);
+  const ALL = ZHUYIN_UNITS.flatMap(u => u.symbols.map(s => ({ ...s, unit: u })));
+
+  // 每個符號寫對幾次（存在這台裝置上，只是給小朋友看星星）
+  let progress = {};
+  try { progress = JSON.parse(localStorage.getItem('zhuyin-progress') || '{}'); } catch (e) {}
+  const saveProgress = () => { try { localStorage.setItem('zhuyin-progress', JSON.stringify(progress)); } catch (e) {} };
+
+  const q = new URLSearchParams(location.search);
+  let idx = Math.max(0, ALL.findIndex(s => s.ch === q.get('ch')));
+  if (!q.get('ch') && q.get('unit')) idx = Math.max(0, ALL.findIndex(s => s.unit.id === +q.get('unit')));
+  let mode = 'trace';
+
+  const pad = new Pad({ pad: $('pad'), canvas: $('padCanvas'), video: $('cam'), status: $('camStatus'),
+                        onSubmit: () => check(), onClear: () => setFeedback('', '') });
+
+  // ───────── 畫面 ─────────
+  const rubyHTML = s => zhuyinRuby(s);
+  function renderUnits() {
+    const cur = ALL[idx].unit;
+    $('unitsBar').innerHTML = ZHUYIN_UNITS.map(u =>
+      `<button data-unit="${u.id}" class="${u === cur ? 'on' : ''}" style="${u === cur ? `background:${u.color}` : ''}">${u.id}. ${u.name}</button>`).join('');
+    $('symlist').innerHTML = `<div class="unit-title">單元 ${cur.id}・${cur.name}</div>` + cur.symbols.map(s =>
+      `<button data-ch="${s.ch}" class="${s.ch === ALL[idx].ch ? 'on' : ''}" style="${s.ch === ALL[idx].ch ? `background:${cur.color}` : ''}">${s.ch}${progress[s.ch] ? '<span class="done">⭐</span>' : ''}</button>`).join('');
+    $('toWorksheet').href = `worksheet.html?unit=${cur.id}`;
+  }
+  function render(animate = true) {
+    const s = ALL[idx];
+    $('glyph').textContent = s.ch;
+    $('glyph').style.color = s.unit.color;
+    if (animate) { $('glyph').classList.remove('pop'); void $('glyph').offsetWidth; $('glyph').classList.add('pop'); }
+    $('unitChip').textContent = `單元 ${s.unit.id}・${s.unit.name}`;
+    $('unitChip').style.background = s.unit.color;
+    $('emoji').textContent = s.emoji;
+    $('word').innerHTML = rubyHTML(s);
+    $('tip').textContent = s.tip;
+    $('guide').textContent = s.ch;
+    $('guide').classList.remove('show');
+    $('prevBtn').disabled = idx === 0;
+    $('nextBtn').disabled = idx === ALL.length - 1;
+    pad.clear(); setFeedback('', ''); showStars();
+    renderUnits();
+    history.replaceState(null, '', `?unit=${s.unit.id}&ch=${encodeURIComponent(s.ch)}`);
+  }
+  function showStars() {
+    const n = Math.min(3, progress[ALL[idx].ch] || 0);
+    $('stars').textContent = n ? '⭐'.repeat(n) + '☆'.repeat(3 - n) : '';
+  }
+  function setFeedback(t, cls) { $('feedback').textContent = t; $('feedback').className = 'feedback ' + cls; }
+  function go(i) { idx = Math.max(0, Math.min(ALL.length - 1, i)); render(); }
+
+  // ───────── 聽 ─────────
+  function saySymbol() {
+    const s = ALL[idx];
+    speak(s.say ? `${s.say}，${s.word}` : s.word);
+  }
+
+  // ───────── 寫 ─────────
+  function setMode(m) {
+    mode = m;
+    document.querySelectorAll('.mode').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+    $('pad').className = 'pad ' + m;
+    $('gest').hidden = m !== 'air';
+    $('hintBtn').hidden = m !== 'air';
+    $('modeHint').textContent = m === 'air' ? '對著鏡頭，用食指在空中寫（沒有相機也可以用滑鼠寫）' : '用滑鼠或手指，照著淡淡的字描寫';
+    pad.colors = m === 'air' ? { glow: 'rgba(255,190,80,.35)', ink: '#fffaeb' } : { glow: 'rgba(240,138,60,.25)', ink: '#3b2414' };
+    pad.clear(); setFeedback('', '');
+    pad.stop();
+    pad.start({ camera: m === 'air' });
+  }
+  function check() {
+    if (pad.busy) return;
+    pad.endStroke();
+    const s = ALL[idx];
+    const res = Recognizer.check(pad.strokes, pad.aspect, s.ch);
+    if (res.reason === 'empty') return setFeedback('先寫一寫喔！', 'bad');
+    if (res.reason === 'small') return setFeedback('寫大一點點喔！', 'bad');
+    if (res.ok) {
+      progress[s.ch] = (progress[s.ch] || 0) + 1; saveProgress();
+      setFeedback(`寫對了！「${s.ch}」好棒！`, 'ok');
+      speak('寫對了，好棒');
+      showStars(); renderUnits();
+      pad.busy = true;
+      setTimeout(() => { pad.busy = false; pad.clear(); }, 1200);
+    } else {
+      setFeedback(`看起來像「${res.best}」，再寫一次！`, 'bad');
+      if (mode === 'air') $('guide').classList.add('show');
+      pad.clear();
+    }
+  }
+
+  // ───────── 事件 ─────────
+  $('unitsBar').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    go(ALL.findIndex(s => s.unit.id === +b.dataset.unit));
+  });
+  $('symlist').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    go(ALL.findIndex(s => s.ch === b.dataset.ch));
+  });
+  document.querySelectorAll('.mode').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  $('saySym').addEventListener('click', saySymbol);
+  $('sayWord').addEventListener('click', () => speak(ALL[idx].word));
+  $('glyph').addEventListener('click', saySymbol);
+  $('clearBtn').addEventListener('click', () => { pad.clear(); setFeedback('', ''); });
+  $('hintBtn').addEventListener('click', () => $('guide').classList.toggle('show'));
+  $('checkBtn').addEventListener('click', check);
+  $('prevBtn').addEventListener('click', () => go(idx - 1));
+  $('nextBtn').addEventListener('click', () => go(idx + 1));
+
+  function present(on) {
+    document.body.classList.toggle('present', on);
+    try {
+      if (on && !document.fullscreenElement) document.documentElement.requestFullscreen();
+      if (!on && document.fullscreenElement) document.exitFullscreen();
+    } catch (e) {}
+  }
+  $('presentBtn').addEventListener('click', () => present(true));
+  $('exitPresent').addEventListener('click', () => present(false));
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) document.body.classList.remove('present'); });
+  addEventListener('keydown', e => {
+    if (e.target.closest('input,textarea')) return;
+    if (e.key === 'ArrowRight') go(idx + 1);
+    else if (e.key === 'ArrowLeft') go(idx - 1);
+    else if (e.key === ' ' && document.body.classList.contains('present')) { e.preventDefault(); saySymbol(); }
+    else if (e.key === 'Escape') present(false);
+  });
+
+  render(false);
+  setMode('trace');
+  window.__materials = { pad, check, go, get idx() { return idx; } };   // 測試用
+})();
+</script>
+</body>
+</html>
