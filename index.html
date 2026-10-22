@@ -365,6 +365,7 @@
 
 <script src="js/zhuyin-data.js"></script>
 <script src="js/airwriter.js"></script>
+<script src="js/voice.js"></script>
 <script src="js/progress.js"></script>
 <script src="js/sfx.js"></script>
 <script>
@@ -398,7 +399,7 @@
     const size = 48 + Math.random() * 26;
     Object.assign(b.style, { left: (3 + Math.random() * 92) + '%', width: size + 'px', height: size + 'px', fontSize: size * 0.48 + 'px',
                              animationDuration: (11 + Math.random() * 8) + 's' });
-    b.addEventListener('click', () => { window.Sfx && Sfx.play('pop'); speak(sayOf(s)); b.classList.add('pop'); setTimeout(() => b.remove(), 350); });
+    b.addEventListener('click', () => { window.Sfx && Sfx.play('pop'); Voice.speakSymbol(s); b.classList.add('pop'); setTimeout(() => b.remove(), 350); });
     b.addEventListener('animationend', e => { if (e.animationName === 'rise') b.remove(); });
     bubbles.appendChild(b);
   }
@@ -460,8 +461,8 @@
       <a class="btn small" href="materials.html?unit=${today.unit.id}&ch=${encodeURIComponent(today.ch)}">✍️ 去練寫</a>
       <a class="btn small" href="worksheet.html?unit=${today.unit.id}">📝 單元 ${today.unit.id} 學習單</a>
     </div>`;
-  $('todaySym').addEventListener('click', () => speak(sayOf(today)));
-  $('todaySay').addEventListener('click', () => speak(sayOf(today)));
+  $('todaySym').addEventListener('click', () => Voice.speakSymbol(today));
+  $('todaySay').addEventListener('click', () => Voice.speakSymbol(today));
 
   // ───────── 注音泡泡暖身（聽音辨識） ─────────
   const ROUNDS = 5;
@@ -493,7 +494,7 @@
       pond.appendChild(b);
     });
     setFb(`第 ${qi + 1} 題：仔細聽～`, '');
-    setTimeout(() => speak(q.say, 0.8), 250);
+    setTimeout(() => Voice.speakSymbol(q, { word: false, rate: 0.8 }), 250);
   }
   function answer(b, ok) {
     if (locked) return;
@@ -505,7 +506,7 @@
       b.classList.remove('wrong'); void b.offsetWidth; b.classList.add('wrong');
       setFb('再聽一次看看～', 'bad'); window.Sfx && Sfx.play('wrong');
       if (!b.dataset.miss) { b.dataset.miss = 1; qs[qi].missed = true; }
-      setTimeout(() => speak(qs[qi].say, 0.8), 300);
+      setTimeout(() => Voice.speakSymbol(qs[qi], { word: false, rate: 0.8 }), 300);
     }
   }
   function warmEnd() {
@@ -524,7 +525,7 @@
   }
   function setFb(t, c) { $('warmFb').textContent = t; $('warmFb').className = 'fb ' + c; }
   $('warmStart').addEventListener('click', warmStart);
-  $('warmAgain').addEventListener('click', () => qs[qi] && speak(qs[qi].say, 0.8));
+  $('warmAgain').addEventListener('click', () => qs[qi] && Voice.speakSymbol(qs[qi], { word: false, rate: 0.8 }));
 
   // ───────── 學習進度 + 徽章 ─────────
   function renderProgress() {

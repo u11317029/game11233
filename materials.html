@@ -61,6 +61,12 @@
   .feedback.ok { color: var(--green); } .feedback.bad { color: var(--red); }
   .stars { font-size: 26px; letter-spacing: 2px; }
 
+  .rec-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 15px; color: var(--muted); }
+  .rec-row .btn { font-size: 14px; padding: 3px 10px; }
+  .rec-row .btn.on { background: #ff8a8a; color: #fff; animation: recblink 1s steps(2) infinite; }
+  @keyframes recblink { 50% { opacity: .6; } }
+  .rec-row .ok { color: var(--green); }
+  body.present .rec-row { display: none; }
   .pager { display: flex; justify-content: space-between; margin-top: 18px; gap: 10px; }
 
   /* 投影模式：給老師在大螢幕上帶全班 */
@@ -130,6 +136,7 @@
             <button class="btn" id="saySym">🔊 聽符號</button>
             <button class="btn" id="sayWord">🔊 聽例詞</button>
           </div>
+          <div class="rec-row" id="recRow"></div>
           <div class="tip">👄 <b>發音小提示：</b><span id="tip"></span></div>
           <div id="pairLink"></div>
         </div>
@@ -171,6 +178,7 @@
 
 <script src="js/zhuyin-data.js"></script>
 <script src="js/airwriter.js"></script>
+<script src="js/voice.js"></script>
 <script src="js/progress.js"></script>
 <script src="js/sfx.js"></script>
 <script>
@@ -220,7 +228,7 @@
     $('prevBtn').disabled = idx === 0;
     $('nextBtn').disabled = idx === ALL.length - 1;
     pad.clear(); setFeedback('', ''); showStars();
-    renderUnits();
+    renderUnits(); renderRec();
     history.replaceState(null, '', `?unit=${s.unit.id}&ch=${encodeURIComponent(s.ch)}`);
   }
   function showStars() {
@@ -233,8 +241,32 @@
   // ───────── 聽 ─────────
   function saySymbol() {
     const s = ALL[idx];
-    speak(s.say ? `${s.say}，${s.word}` : s.word);
+    Voice.speakSymbol(s);
   }
+
+  // ───────── 老師錄音：錄下老師念的符號和例詞，整個網站都會優先播放 ─────────
+  async function renderRec() {
+    const s = ALL[idx], items = [['sym', Voice.symKey(s.ch), `符號「${s.ch}」`], ['word', Voice.textKey(s.word), `例詞「${s.word}」`]];
+    const parts = await Promise.all(items.map(async ([k, key, label]) => {
+      const done = await Voice.has(key), on = Voice.recording === key;
+      return `<button class="btn small ${on ? 'on' : ''}" data-rec="${key}">${on ? '⏹ 錄音中…按一下停止' : `🎙️ 錄${label}`}</button>` +
+        (done && !on ? `<span class="ok">✅ 已錄</span><button class="btn small" data-del="${key}" title="刪掉這段錄音，改回語音合成">🗑️</button>` : '');
+    }));
+    $('recRow').innerHTML = '老師錄音：' + parts.join('');
+  }
+  $('recRow').addEventListener('click', async e => {
+    const r = e.target.closest('[data-rec]'), d = e.target.closest('[data-del]');
+    if (d) { await Voice.deleteClip(d.dataset.del); return renderRec(); }
+    if (!r) return;
+    const key = r.dataset.rec;
+    if (Voice.recording === key) { await Voice.stopRecording(); renderRec(); Voice.sequence([{ key, text: '' }]); return; }
+    try {
+      Voice.stop();
+      const rec = await Voice.record(key);
+      renderRec();
+      rec.done.then(renderRec);
+    } catch (err) { alert('沒辦法使用麥克風，請確認瀏覽器已允許麥克風。'); }
+  });
 
   // ───────── 寫 ─────────
   function setMode(m) {

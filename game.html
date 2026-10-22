@@ -78,6 +78,15 @@
   .lvl-btn { position: fixed; top: 14px; right: 150px; z-index: 5; font: inherit; font-size: 18px; color: #3b2414; background: rgba(255,250,235,.92);
              padding: 6px 14px; border: none; cursor: pointer; }
   .snd-btn { position: fixed; top: 14px; right: 290px; z-index: 5; font: inherit; font-size: 20px; background: rgba(255,250,235,.92); border: none; cursor: pointer; padding: 4px 10px; }
+  .bee-hud { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 6; background: #fffaeb; color: #3b2414; padding: 10px 18px;
+             display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; max-width: 94vw; font-size: 20px;
+             box-shadow: 0 -4px 0 #3b2414, 0 4px 0 #3b2414, -4px 0 0 #3b2414, 4px 0 0 #3b2414, 6px 6px 0 rgba(59,36,20,.3); }
+  .bee-hud.hidden { display: none; }
+  .bee-hud .btn { margin: 0; font-size: 18px; padding: 6px 14px; }
+  .bee-hud small { font-size: 13px; opacity: .75; }
+  @media (max-width: 900px) { .bee-hud small { display: none; } .bee-hud { font-size: 16px; padding: 6px 12px; gap: 8px; } }
+  body.bees-mode .hud .pill:not(.hearts), body.bees-mode .progress { display: none !important; }
+  .bee-hud .ok { color: #2e9d4a; } .bee-hud .bad { color: #c0392b; }
   .progress { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(460px, 46vw); height: 22px; z-index: 4; pointer-events: none;
               background: #3b2414; padding: 4px; box-shadow: 4px 4px 0 rgba(59,36,20,.3); }
   .progress .fill { position: absolute; left: 4px; top: 4px; bottom: 4px; width: 0; background: repeating-linear-gradient(90deg, #ffcf3f 0 10px, #f0b42a 10px 20px); }
@@ -172,6 +181,11 @@
 <div class="toast" id="toast"></div>
 <a class="home" href="index.html">🏠 回首頁</a>
 <button class="lvl-btn pixel-frame" id="lvlBtn">🗺️ 地圖</button>
+<div class="bee-hud hidden" id="beeHud">
+  <span id="beeHp"></span><span id="beeMsg"></span>
+  <button class="btn" id="beeSay">🔊 再聽一次</button>
+  <small>點蜜蜂（或用 ←→ 選、X 發射）打下正確的注音</small>
+</div>
 <div class="progress hidden" id="progress"><div class="track"></div><div class="fill" id="progFill"></div><img id="progKid" src="assets/xiaojian_pixel.png" alt=""><span class="goal" id="progGoal">🐉</span></div>
 
 <div class="worldmap" id="startScreen">
@@ -180,6 +194,7 @@
       <h1>🗺️ 小簡的冒險地圖</h1>
       <p>點地上的小圓圈進入關卡！過關會解鎖下一關。　<kbd>←</kbd><kbd>→</kbd> 選關卡　<kbd>Enter</kbd> 出發</p>
     </div>
+    <button class="btn ghost" style="margin:0;font-size:16px;padding:6px 12px" onclick="window.Voice && Voice.openSettings()">🗣️ 聲音設定</button>
     <details class="dex"><summary>👾 怪物圖鑑</summary><div class="bestiary" id="bestiary"></div>
       <p style="font-size:14px;margin:6px 0 0">❤️ 3 顆愛心　❓ 頂問號方塊　🪄 魔杖按 <kbd>X</kbd>　🚩 存檔旗　🍄 彈簧蘑菇</p></details>
   </div>
@@ -276,7 +291,7 @@
       enemies: [['minion', 1], ['slime', .7]], symbols: 'ㄅㄆㄇㄈㄉㄊㄋㄌ', units: '單元 1–2' },
     { id: 2, name: '海邊沙灘', desc: '小心坑洞上的蝙蝠，踩彈簧跳高高', biome: 'beach', length: 4600, boss: 'octopus', spikes: true, springs: true,
       enemies: [['minion', .7], ['slime', .8], ['bat', 1]], symbols: 'ㄍㄎㄏㄐㄑㄒ', units: '單元 3–4' },
-    { id: 3, name: '蘑菇森林', desc: '刺刺球和生氣方塊躲在大蘑菇後面', biome: 'forest', length: 5200, boss: 'dragon', spikes: true, springs: true,
+    { id: 3, name: '蘑菇森林', desc: '終點的蜜蜂女王會把小簡抓走！聽聲音打下正確注音的蜜蜂', biome: 'forest', length: 5200, boss: 'queen', challenge: 'listen', spikes: true, springs: true,
       enemies: [['slime', .8], ['bat', .8], ['spike', .9], ['block', .8]], symbols: 'ㄓㄔㄕㄖㄗㄘㄙ', units: '單元 5–6' },
     { id: 4, name: '冰雪山谷', desc: '雪地裡有害羞幽靈，牠只怕魔法，先拿魔杖！', biome: 'snow', length: 5800, boss: 'octopus', spikes: true, springs: true,
       enemies: [['bat', 1], ['spike', .7], ['block', .5], ['ghost', 1]], symbols: 'ㄧㄨㄩㄅㄉㄍㄐㄓㄗ', units: '單元 7＋複習' },
@@ -689,8 +704,8 @@
     const ay = clamp(gen.y, 380, 440);
     const arena = addPlatform(gen.x, ay, 1150, false);
     const kind = level.endless ? (gen.bossCount % 2 === 0 ? 'dragon' : 'octopus') : level.boss;
-    const h = 230, w = kind === 'dragon' ? h * 447 / 520 : h;
-    boss = { kind, img: kind === 'dragon' ? IMG.boss : IMG.octo, x: arena.x + 760, y: ay - h, w, h, state: 'idle', t: 0, hit: 0 };
+    const h = kind === 'queen' ? 144 : 230, w = kind === 'dragon' ? h * 447 / 520 : kind === 'queen' ? 170 : h;
+    boss = { kind, img: kind === 'dragon' ? IMG.boss : kind === 'queen' ? IMG.queen[0] : IMG.octo, x: arena.x + 760, y: ay - h - (kind === 'queen' ? 170 : 0), w, h, state: 'idle', t: 0, hit: 0 };
     flags.push({ x: arena.x + 160, y: ay, on: false, t: 0 });     // 打怪前存檔
     gen.x = arena.x + arena.w;
     gen.y = ay;
@@ -776,7 +791,7 @@
         // 問號方塊：從下面頂會掉出寶石、愛心或魔杖
         const n = gw > 300 && chance(.4) ? 2 : 1;
         const bx = gx + rand(40, gw - 40 - n * KS);
-        for (let i = 0; i < n; i++) qblocks.push({ x: bx + i * KS, y: ny - 195, w: KS, h: KS, used: false, bump: 0, floating: true });
+        for (let i = 0; i < n; i++) qblocks.push({ x: bx + i * KS, y: ny - 172, w: KS, h: KS, used: false, bump: 0, floating: true });
       } else if (!floatingHere && level.springs && meters > 12 && gw > 230 && chance(.2)) {
         // 彈簧蘑菇 + 高空獎勵台
         const sx = gx + gw * 0.3;
@@ -817,6 +832,7 @@
   addEventListener('keydown', e => {
     const k = KEYMAP[e.code];
     if (state === 'start') { mapKey(e); return; }
+    if (state === 'bees') { if (BEE.phase === 'play') beeKey(e); e.preventDefault(); return; }
     if (state === 'clear') { if (e.code === 'Enter') { e.preventDefault(); document.getElementById(document.getElementById('nextBtn').hidden ? 'againBtn' : 'nextBtn').click(); } return; }
     if (state === 'boss-wait' && e.code === 'Enter') { startChallenge(); return; }
     if (!k) return;
@@ -973,6 +989,7 @@
   }
   function showLevelSelect(afterClear = false) {
     state = 'start';
+    beeHud().classList.add('hidden'); document.body.classList.remove('bees-mode');
     const nx = LEVELS.find(l => l.id === level.id + 1);
     mapSel = afterClear && nx && unlocked(nx, loadLevels()) ? nx.id : level.id;
     keys.left = keys.right = keys.jump = false;
@@ -995,7 +1012,8 @@
     window.Sfx && Sfx.play('start');
     window.Sfx && Sfx.bgm.play('assets/audio/bgm-jungle-prince.m4a'); window.Sfx && Sfx.bgm.duck(false);
     document.getElementById('progress').classList.toggle('hidden', !!level.endless);
-    document.getElementById('progGoal').textContent = level.boss === 'octopus' ? '🐙' : '🐉';
+    document.getElementById('progGoal').textContent = { octopus: '🐙', queen: '🐝' }[level.boss] || '🐉';
+    beeHud().classList.add('hidden'); document.body.classList.remove('bees-mode');
   }
   function startGame() {           // 按 Enter：開始下一個還沒過的關卡
     const rec = loadLevels();
@@ -1012,14 +1030,15 @@
     });
     document.getElementById('clearTitle').textContent = `第 ${level.id} 關 過關！`;
     document.getElementById('clearStars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
-    document.getElementById('clearInfo').innerHTML = `收集寶石 ${gemCount} 顆・受傷 ${hitsTaken} 次<br>` +
-      (stars === 3 ? '完美過關，一次都沒受傷！' : '不受傷過關可以拿到 3 顆星喔！');
+    document.getElementById('clearInfo').innerHTML = `收集寶石 ${gemCount} 顆・受傷${level.boss === 'queen' ? '或答錯' : ''} ${hitsTaken} 次<br>` +
+      (stars === 3 ? '完美過關，一次都沒失誤！' : '不受傷過關可以拿到 3 顆星喔！');
     const next = LEVELS.find(lv => lv.id === level.id + 1);
     document.getElementById('nextBtn').hidden = !next;
     if (next) document.getElementById('nextBtn').textContent = next.endless ? '無盡冒險 ▶' : `第 ${next.id} 關 ▶`;
     clearScreen.classList.remove('hidden');
   }
   document.getElementById('againBtn').addEventListener('click', () => startLevel(level.id));
+  document.getElementById('beeSay').addEventListener('click', sayTarget);
   document.getElementById('mapBtn').addEventListener('click', () => showLevelSelect(true));
   document.getElementById('nextBtn').addEventListener('click', () => startLevel(level.id + 1));
   document.getElementById('lvlBtn').addEventListener('click', () => {
@@ -1099,8 +1118,8 @@
     b.used = true;
     const cx = b.x + b.w / 2;
     const r = Math.random();
-    if (r < 0.22 && player.magic <= 0) items.push({ kind: 'wand', x: cx, y: b.y - 30, baseY: b.y - 34, rise: 0, t: 0 });
-    else if (r < 0.45 && player.hp < MAX_HP) items.push({ kind: 'heart', x: cx, y: b.y - 30, baseY: b.y - 34, rise: 0, t: 0 });
+    if (r < 0.22 && player.magic <= 0) items.push({ kind: 'wand', x: cx, y: b.y - 30, baseY: b.y - 34, rise: 0, t: 0, magnet: true });
+    else if (r < 0.45 && player.hp < MAX_HP) items.push({ kind: 'heart', x: cx, y: b.y - 30, baseY: b.y - 34, rise: 0, t: 0, magnet: true });
     else {
       gemCount += 3; window.Sfx && Sfx.play('coin');
       popups.push({ x: cx, y: b.y - 10, text: '+3', t: 0, small: true });
@@ -1111,7 +1130,223 @@
   // ───────── 物理 ─────────
   const overlap = (ax, ay, aw, ah, b) => ax < b.x + b.w && ax + aw > b.x && ay < b.y + b.h && ay + ah > b.y;
 
+  // ───────── 蜜蜂女王關卡：小簡被抓到天上，聽聲音、打下身上有正確注音的蜜蜂 ─────────
+  // 像素蜜蜂（程式畫的）：queen = 女王（比較大、有皇冠）；wingUp = 翅膀往上的那一格動畫
+  function buildBee(queen, wingUp) {
+    const W = queen ? 40 : 20, H = queen ? 34 : 17;
+    const cx = W * 0.55, cy = H * 0.62, rx = W * 0.38, ry = H * 0.3, sw = queen ? 4 : 2;
+    return pixelCanvas(W, H, (x, y) => {
+      const dx = (x - cx) / rx, dy = (y - cy) / ry;
+      if (dx * dx + dy * dy <= 1) {                                   // 身體
+        if (x < cx - rx * 0.5) {                                      // 頭
+          if (Math.abs(x - (cx - rx * 0.78)) < (queen ? 2 : 1) && Math.abs(y - (cy - ry * 0.25)) < (queen ? 2 : 1)) return '#ffffff';
+          return '#3b2414';
+        }
+        const band = Math.floor((x - (cx - rx * 0.5)) / sw) % 2;
+        if (band) return '#2b1a12';
+        return y > cy + ry * 0.45 ? '#e0a92a' : '#ffcf3f';
+      }
+      if (x > cx + rx - 1 && x < cx + rx + (queen ? 5 : 3) && Math.abs(y - cy) <= (cx + rx + (queen ? 5 : 3) - x) * 0.6) return '#3b2414';   // 針
+      const wy = cy - ry - (wingUp ? (queen ? 8 : 4) : (queen ? 3 : 1));
+      for (const wx of [cx - rx * 0.1, cx + rx * 0.45]) {             // 翅膀
+        const ex = (x - wx) / (queen ? 6.5 : 3.4), ey = (y - wy) / (queen ? 5.5 : 2.8);
+        if (ex * ex + ey * ey <= 1) return ey < -0.3 ? '#ffffff' : '#cfe8ff';
+      }
+      if (queen) {                                                    // 皇冠
+        const kx = cx - rx * 0.62, top = cy - ry - 7;
+        if (x >= kx - 4 && x <= kx + 4 && y >= top && y < top + 5 && (y >= top + 2 || (x - kx + 4) % 4 === 0)) return y === top + 3 ? '#ff6b81' : '#ffd700';
+      }
+      return null;
+    }, true);
+  }
+
+  const BEE = { phase: '', t: 0, hp: 3, swarm: [], target: '', used: [], shots: [], sel: 0, locked: false, mistakes: 0, startX: 0, startY: 0 };
+  const beeHud = () => document.getElementById('beeHud');
+  function beeMsg(t, cls = '') { const el = document.getElementById('beeMsg'); el.textContent = t; el.className = cls; }
+  function beeHearts() { document.getElementById('beeHp').textContent = '🐝'.repeat(BEE.hp) + '　'; }
+  function sayTarget() { window.Voice && window.ZHUYIN_INDEX && Voice.speakSymbol(ZHUYIN_INDEX[BEE.target], { rate: 0.8 }); }
+
+  function startBeeGrab() {                                          // 女王俯衝下來把小簡抓走
+    state = 'bee-grab'; BEE.phase = 'swoop'; BEE.t = 0; BEE.startX = boss.x; BEE.startY = boss.y;
+    player.vx = player.vy = 0;
+    window.Sfx && Sfx.play('roar'); window.Sfx && Sfx.bgm.duck(true);
+    toast('糟糕！蜜蜂女王把小簡抓走了！', 2.4);
+  }
+  function startBeeGame() {
+    state = 'bees'; BEE.phase = 'play'; BEE.t = 0; BEE.hp = 3; BEE.used = []; BEE.mistakes = 0; BEE.shots = [];
+    particles = []; popups = [];
+    document.getElementById('progress').classList.add('hidden');
+    document.body.classList.add('bees-mode');
+    beeHud().classList.remove('hidden'); beeHearts();
+    nextBeeRound();
+  }
+  function nextBeeRound() {
+    const all = 'ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙ';
+    const pool = [...(level.symbols || all)].filter(c => !BEE.used.includes(c));
+    BEE.target = pool[randi(0, pool.length - 1)]; BEE.used.push(BEE.target);
+    // 選項：目標 + 容易搞混的那一個 + 同一關的其他注音，共 5 隻蜜蜂
+    const partner = ((window.ZHUYIN_PAIRS_OF || {})[BEE.target] || []).map(pr => pr.a === BEE.target ? pr.b : pr.a);
+    const others = [...(level.symbols || all)].filter(c => c !== BEE.target && !partner.includes(c)).sort(() => Math.random() - .5);
+    const extra = [...all].filter(c => c !== BEE.target && !partner.includes(c) && !others.includes(c)).sort(() => Math.random() - .5);
+    const opts = [BEE.target, ...partner, ...others, ...extra].slice(0, 5).sort(() => Math.random() - .5);
+    const n = opts.length, margin = 110;
+    BEE.swarm = opts.map((ch, i) => ({ ch, baseX: margin + (viewW - margin * 2) * (i + .5) / n, baseY: 262 + (i % 2) * 82, ph: rand(0, 6), sp: rand(.8, 1.3),
+                                       x: -100, y: 0, enter: i * 0.12, hit: 0, wrong: 0, gone: 0 }));
+    BEE.sel = 0; BEE.locked = false;
+    beeMsg('🔊 仔細聽，哪一隻蜜蜂身上是這個注音？');
+    setTimeout(sayTarget, 500);
+  }
+  function shootBee(b) {
+    if (BEE.locked || !b || b.hit || b.gone) return;
+    BEE.locked = true;
+    const qx = viewW / 2, qy = 220;
+    BEE.shots.push({ x0: qx, y0: qy, bee: b, t: 0 });
+    window.Sfx && Sfx.play('magic');
+  }
+  function resolveShot(b) {
+    if (b.ch === BEE.target) {
+      b.hit = 0.001; BEE.hp--; beeHearts();
+      flash = { t: .25, color: '255,255,255' }; cam.shake = .2;
+      popups.push({ x: viewW / 2, y: 200, text: `答對了！${b.ch}`, t: 0 });
+      for (let i = 0; i < 18; i++) particles.push({ x: b.x, y: b.y, vx: rand(-260, 260), vy: rand(-300, 60), t: 0, life: .7, star: true });
+      window.Sfx && Sfx.play('correct'); window.Sfx && Sfx.play('zap');
+      beeMsg(`答對了！就是「${b.ch}」！`, 'ok');
+      setTimeout(() => { if (state !== 'bees') return; if (BEE.hp > 0) nextBeeRound(); else beeWin(); }, 1500);
+    } else {
+      b.wrong = 0.6; BEE.mistakes++; hitsTaken++;
+      window.Sfx && Sfx.play('wrong');
+      beeMsg(`不是「${b.ch}」喔，再聽一次！`, 'bad');
+      setTimeout(() => { b.gone = 0.001; if (state === 'bees') { BEE.locked = false; sayTarget(); } }, 700);
+    }
+  }
+  function beeWin() {
+    BEE.phase = 'win'; BEE.t = 0;
+    saveGameRecord(1);
+    beeMsg('打敗蜜蜂女王了！小簡自由了！', 'ok');
+    window.Sfx && Sfx.play('fanfare');
+    for (let i = 0; i < 30; i++) particles.push({ x: viewW / 2, y: 100, vx: rand(-320, 320), vy: rand(-380, 40), t: 0, life: .9, star: true });
+    setTimeout(() => { beeHud().classList.add('hidden'); document.body.classList.remove('bees-mode'); if (state === 'bees') levelClear(); }, 2400);
+  }
+  function beeKey(e) {
+    const alive = BEE.swarm.filter(b => !b.hit && !b.gone);
+    if (!alive.length) return;
+    if (e.code === 'ArrowRight') { BEE.sel = (BEE.sel + 1) % alive.length; window.Sfx && Sfx.play('click'); }
+    else if (e.code === 'ArrowLeft') { BEE.sel = (BEE.sel - 1 + alive.length) % alive.length; window.Sfx && Sfx.play('click'); }
+    else if (['Space', 'KeyX', 'Enter', 'KeyK'].includes(e.code)) { e.preventDefault(); shootBee(alive[BEE.sel % alive.length]); }
+    else if (e.code === 'KeyR') sayTarget();
+  }
+  canvas.addEventListener('pointerdown', e => {
+    if (state !== 'bees' || BEE.phase !== 'play') return;
+    const x = e.clientX / innerWidth * viewW, y = e.clientY / innerHeight * VIEW_H;
+    let best = null, bd = 70;
+    for (const b of BEE.swarm) { if (b.hit || b.gone) continue; const d = Math.hypot(b.x - x, b.y - y); if (d < bd) { bd = d; best = b; } }
+    if (best) shootBee(best);
+  });
+
+  function beeStep(dt) {
+    BEE.t += dt;
+    const p = player;
+    if (state === 'bee-grab') {
+      const tx = p.x + P_W / 2 - boss.w / 2, ty = p.y - boss.h + 26;
+      if (BEE.t < 0.9) { const k = BEE.t / 0.9, e = k * k * (3 - 2 * k); boss.x = BEE.startX + (tx - BEE.startX) * e; boss.y = BEE.startY + (ty - BEE.startY) * e; }
+      else if (BEE.t > 1.1) {
+        boss.y -= (300 + (BEE.t - 1.1) * 500) * dt;
+        p.x = boss.x + boss.w / 2 - P_W / 2; p.y = boss.y + boss.h - 26; p.onGround = false;
+        if (boss.y + boss.h < -80) startBeeGame();
+      } else if (BEE.t > 0.95 && BEE.phase === 'swoop') { BEE.phase = 'lift'; window.Sfx && Sfx.play('hurt'); }
+      boss.t += dt;
+    } else {
+      for (const b of BEE.swarm) {
+        const tt = BEE.t * b.sp + b.ph;
+        let x = b.baseX + Math.sin(tt) * 70, y = b.baseY + Math.sin(tt * 1.7) * 34;
+        if (BEE.t < b.enter + .6) x = -80 + (x + 80) * Math.min(1, Math.max(0, (BEE.t - b.enter) / .6));   // 一隻一隻飛進來
+        if (b.hit) { b.hit += dt; y = b.y + 380 * dt * (1 + b.hit * 3); x = b.x; }
+        else if (b.gone) { b.gone += dt; x = b.x + 600 * dt; y = b.y - 200 * dt; }
+        else if (b.wrong > 0) { b.wrong -= dt; x += Math.sin(BEE.t * 60) * 6; }
+        b.x = x; b.y = y;
+      }
+      for (const s of BEE.shots) { s.t += dt; if (s.t >= .3 && !s.done) { s.done = true; resolveShot(s.bee); } }
+      BEE.shots = BEE.shots.filter(s => s.t < .32);
+    }
+    for (const q of particles) { q.t += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 600 * dt; }
+    particles = particles.filter(q => q.t < q.life);
+    for (const q of popups) q.t += dt;
+    popups = popups.filter(q => q.t < 1.1);
+    cam.shake = Math.max(0, cam.shake - dt);
+  }
+
+  function drawBees() {
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    const sky = ['#5ab6ef', '#6dc0f2', '#82caf4', '#98d4f6', '#afdef8', '#c7e8fa'];
+    sky.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(0, i * VIEW_H / 6, viewW + 2, VIEW_H / 6 + 1); });
+    const t = performance.now() / 1000;
+    ctx.fillStyle = '#fffaeb';                                        // 往後飄的雲（在高空中）
+    for (let i = 0; i < 7; i++) {
+      const w = 90 + (i * 37) % 80, x = ((i * 211 - t * (20 + i * 6)) % (viewW + 300) + viewW + 300) % (viewW + 300) - 150, y = 40 + (i * 97) % 420;
+      ctx.fillRect(x, y, w, 20); ctx.fillRect(x + w * .2, y - 12, w * .45, 14); ctx.fillRect(x + w * .55, y - 7, w * .3, 8);
+    }
+    const g = BIOMES.forest.layers;                                   // 底下遠遠的森林
+    if (g) { ctx.save(); ctx.imageSmoothingEnabled = false; ctx.globalAlpha = .55; ctx.drawImage(g.mid, 0, 200, TW, 70, 0, VIEW_H - 60, viewW + 2, 60); ctx.restore(); }
+
+    ctx.save();
+    if (cam.shake > 0) ctx.translate(rand(-5, 5), rand(-4, 4));
+    // 女王與被抓住的小簡
+    const flap = Math.floor(t * 10) % 2, qw = 170, qh = 144;
+    let qx = viewW / 2 - qw / 2, qy = 40 + Math.sin(t * 2) * 8, qa = 1, qr = 0;
+    if (BEE.phase === 'win') { const k = Math.min(1, BEE.t / 1.6); qy -= k * 260; qr = k * 4; qa = 1 - k; }
+    ctx.save(); ctx.globalAlpha = qa; ctx.translate(qx + qw / 2, qy + qh / 2); ctx.rotate(qr); ctx.imageSmoothingEnabled = false;
+    if (IMG.queen) ctx.drawImage(IMG.queen[flap], -qw / 2, -qh / 2, qw, qh);
+    ctx.restore();
+    const swing = Math.sin(t * 2.4) * 0.15;
+    const kidY = BEE.phase === 'win' ? 150 + Math.min(1, BEE.t / 2) * 230 : 150;
+    ctx.save(); ctx.translate(viewW / 2, kidY + (BEE.phase === 'win' ? 0 : Math.sin(t * 2) * 8)); ctx.rotate(BEE.phase === 'win' ? 0 : swing);
+    if (IMG.player) { const DH = 88, DW = DH * IMG.player.width / IMG.player.height; ctx.drawImage(IMG.player, -DW / 2, 0, DW, DH); }
+    ctx.restore();
+    // 蜂群
+    const alive = BEE.swarm.filter(b => !b.hit && !b.gone);
+    for (const b of BEE.swarm) {
+      if (b.y > VIEW_H + 80 || b.x > viewW + 120) continue;
+      const bw = 78, bh = 66;
+      ctx.save(); ctx.translate(b.x, b.y);
+      if (b.hit) ctx.rotate(b.hit * 10);
+      ctx.imageSmoothingEnabled = false;
+      if (IMG.beeImgs) ctx.drawImage(IMG.beeImgs[(Math.floor(t * 12) + (b.ph * 3 | 0)) % 2], -bw / 2, -bh / 2, bw, bh);
+      ctx.restore();
+      if (b.hit) continue;
+      // 牌子：注音
+      ctx.save(); ctx.translate(b.x, b.y + 46);
+      const selected = alive[BEE.sel % Math.max(1, alive.length)] === b;
+      ctx.fillStyle = b.wrong > 0 ? '#ffc4c4' : '#ffffff';
+      ctx.fillRect(-26, -24, 52, 48);
+      ctx.lineWidth = 4; ctx.strokeStyle = selected ? '#f08a3c' : '#3b2414'; ctx.strokeRect(-26, -24, 52, 48);
+      ctx.fillStyle = '#3b2414'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '34px "PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif';
+      ctx.fillText(b.ch, 0, 2);
+      if (selected && BEE.phase === 'play') { ctx.fillStyle = '#f08a3c'; ctx.fillRect(-8, -40, 16, 8); ctx.fillRect(-4, -32, 8, 6); }
+      ctx.restore();
+    }
+    // 魔法彈
+    for (const s of BEE.shots) {
+      const k = Math.min(1, s.t / .3), x = s.x0 + (s.bee.x - s.x0) * k, y = s.y0 + (s.bee.y - s.y0) * k;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(s.t * 20); ctx.imageSmoothingEnabled = false;
+      if (IMG.wand) ctx.drawImage(IMG.wand, -16, -16, 32, 32);
+      ctx.restore();
+    }
+    for (const q of particles) { const k = 1 - q.t / q.life; ctx.globalAlpha = k; ctx.fillStyle = '#ffe680'; const r = Math.ceil(3.5 * k + 1.5); ctx.fillRect(q.x - r, q.y - r, r * 2, r * 2); }
+    ctx.globalAlpha = 1;
+    for (const q of popups) {
+      const k = q.t / 1.1; ctx.globalAlpha = 1 - k * k;
+      ctx.font = `${40 + k * 10}px "Cubic 11","PingFang TC",sans-serif`; ctx.textAlign = 'center';
+      ctx.lineWidth = 8; ctx.strokeStyle = '#fffaeb'; ctx.strokeText(q.text, q.x, q.y - k * 40);
+      ctx.fillStyle = '#d0552b'; ctx.fillText(q.text, q.x, q.y - k * 40);
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    if (flash.t > 0) { ctx.fillStyle = `rgba(${flash.color},${Math.min(.45, flash.t * 1.4)})`; ctx.fillRect(0, 0, viewW + 2, VIEW_H); }
+  }
+
   function step(dt) {
+    if (state === 'bee-grab' || state === 'bees') return beeStep(dt);
     const p = player;
     const control = state === 'play';
     const dir = control ? (keys.right ? 1 : 0) - (keys.left ? 1 : 0) : 0;
@@ -1305,7 +1540,8 @@
     if (boss) {
       boss.t += dt;
       boss.hit = Math.max(0, boss.hit - dt);
-      if (boss.state === 'idle' && p.x + P_W > boss.x - 330 && state === 'play') {
+      if (boss.kind === 'queen' && boss.state === 'idle' && p.x + P_W > boss.x - 260 && state === 'play') { boss.state = 'grab'; startBeeGrab(); }
+      if (boss.kind !== 'queen' && boss.state === 'idle' && p.x + P_W > boss.x - 330 && state === 'play') {
         boss.state = 'roar'; boss.t = 0; state = 'boss-intro';
         window.Sfx && Sfx.play('roar'); window.Sfx && Sfx.bgm.duck(true);
         p.vx = 0;
@@ -1339,7 +1575,11 @@
     for (const c of items) {
       if (c.got) continue;
       c.t += dt;
-      if (c.baseY !== undefined) { c.rise = Math.min(1, c.rise + dt * 4); c.y = c.baseY + 30 * (1 - c.rise); }
+      if (c.magnet && c.t > 0.5) {                       // 冒出來之後自己飛到小簡身上
+        const tx = p.x + P_W / 2, ty = p.y + P_H / 2, sp = Math.min(1, dt * (4 + c.t * 6));
+        c.x += (tx - c.x) * sp; c.y += (ty - c.y) * sp;
+        if (Math.random() < dt * 30) particles.push({ x: c.x, y: c.y, vx: rand(-40, 40), vy: rand(-40, 40), t: 0, life: .3, star: true });
+      } else if (c.baseY !== undefined) { c.rise = Math.min(1, c.rise + dt * 4); c.y = c.baseY + 30 * (1 - c.rise); }
       if (Math.abs(c.x - (p.x + P_W / 2)) < 34 && Math.abs(c.y - (p.y + P_H / 2)) < 46) {
         c.got = true;
         if (c.kind === 'gem') { gemCount++; popups.push({ x: c.x, y: c.y, text: '+1', t: 0, small: true }); window.Sfx && Sfx.play('gem'); }
@@ -1420,6 +1660,7 @@
   }
 
   function draw() {
+    if (state === 'bees') return drawBees();
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     ctx.imageSmoothingQuality = 'high';
 
@@ -1572,7 +1813,8 @@
         ctx.beginPath(); ctx.ellipse(boss.x + boss.w * 0.62, boss.y + boss.h, boss.w * 0.4, 9, 0, 0, Math.PI * 2); ctx.fill();
         ctx.translate(boss.x + boss.w / 2, boss.y + boss.h + dy);
         ctx.rotate(rot); ctx.scale(s, s);
-        ctx.imageSmoothingEnabled = boss.kind !== 'octopus';
+        ctx.imageSmoothingEnabled = boss.kind === 'dragon';
+        if (boss.kind === 'queen' && IMG.queen) { boss.img = IMG.queen[Math.floor(performance.now() / 100) % 2]; ctx.translate(0, Math.sin(boss.t * 2.5) * 10); }
         if (boss.img) ctx.drawImage(boss.img, -boss.w / 2, -boss.h, boss.w, boss.h);
         ctx.restore();
       }
@@ -1786,7 +2028,7 @@
   let last = performance.now(), acc = 0;
   const STEP = 1 / 120;
   window.__game = { player, cam, keys, get platforms() { return platforms; }, get minions() { return enemies; }, get enemies() { return enemies; }, get qblocks() { return qblocks; }, get springs() { return springs; }, get spikes() { return spikes; }, get flags() { return flags; }, get bolts() { return bolts; }, addEnemy, hitBlock, hurt, get checkpoint() { return checkpoint; }, press(k) { if (k === 'magic') magicPressed = true; }, get boss() { return boss; },
-                    get state() { return state; }, tick(sec) { for (let i = 0; i < sec * 120; i++) step(STEP); draw(); } };   // 除錯用
+                    get state() { return state; }, get bee() { return BEE; }, shootBee, tick(sec) { for (let i = 0; i < sec * 120; i++) step(STEP); draw(); } };   // 除錯用
   function frame(now) {
     acc += Math.min(0.1, (now - last) / 1000);
     last = now;
@@ -1807,6 +2049,7 @@
     IMG.player = pi; IMG.boss = cleanBoss(bo); IMG.minion = mi; IMG.fire = fi; IMG.tiles = kt; IMG.chars = kc;
     IMG.slime = buildSprite(PIX.slime); IMG.ghost = buildSprite(PIX.ghost); IMG.ghostShy = buildSprite(PIX.ghostShy);
     IMG.wand = buildSprite(PIX.wand); IMG.octo = buildOctopus();
+    IMG.queen = [buildBee(true, false), buildBee(true, true)]; IMG.beeImgs = [buildBee(false, false), buildBee(false, true)];
     renderBestiary();
     BIOMES.grass.img = g; BIOMES.beach.img = b;
     for (const [k, bm] of Object.entries(BIOMES)) if (bm.proc) bm.layers = buildProcBiome(k);
@@ -1822,6 +2065,8 @@
 
 <script src="js/progress.js"></script>
 <script src="js/airwriter.js"></script>
+<script src="js/zhuyin-data.js"></script>
+<script src="js/voice.js"></script>
 <script>
 // ═════════ 注音魔法對決：手勢偵測空中寫字（共用 js/airwriter.js） ═════════
 window.ZhuyinDuel = (() => {

@@ -175,6 +175,7 @@
 
 <script src="js/zhuyin-data.js"></script>
 <script src="js/airwriter.js"></script>
+<script src="js/voice.js"></script>
 <script src="js/progress.js"></script>
 <script src="js/sfx.js"></script>
 <script>
@@ -208,7 +209,7 @@
     <div><div class="sym" style="color:${unit.color}">${s.ch}</div><div class="pic">${s.emoji}</div>
       <div class="ruby">${rubyHTML(s)}</div>
       <button class="btn small" data-say="${s.ch}">🔊</button></div>`).join('');
-  $('know').addEventListener('click', e => { const b = e.target.closest('[data-say]'); if (b) speak(sayOf(ZHUYIN_INDEX[b.dataset.say])); });
+  $('know').addEventListener('click', e => { const b = e.target.closest('[data-say]'); if (b) Voice.speakSymbol(ZHUYIN_INDEX[b.dataset.say]); });
 
   // ───────── 二、描一描（每格都能直接用手指 / 滑鼠寫） ─────────
   $('trace').innerHTML = unit.symbols.map(s => `<div class="trace-row">
@@ -293,7 +294,7 @@
     const word = e.target.closest('[data-word]');
     if (word) return speak(word.dataset.word, 0.8);
     const say = e.target.closest('[data-say]');
-    if (say) return speak(sayOf(ZHUYIN_INDEX[say.dataset.say]));
+    if (say) return Voice.speakSymbol(ZHUYIN_INDEX[say.dataset.say]);
     const opt = e.target.closest('.opt'); if (!opt) return;
     pick(opt.closest('.q').dataset.q, opt.dataset.o);
   }));
