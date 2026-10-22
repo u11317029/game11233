@@ -147,7 +147,7 @@
             <div class="status" id="camStatus"></div>
           </div>
           <div class="side">
-            <div class="gest" id="gest" hidden>☝️ 只伸出<b>食指</b>：寫字<br>🖐️ <b>張開手掌</b>停一下：檢查<br>✊ <b>握拳</b>停一下：擦掉重寫</div>
+            <div class="gest" id="gest" hidden>☝️ 只伸出<b>食指</b>：寫字<br>✊ <b>握拳</b>：暫停筆畫（移到下一筆的起點）<br>✌️ <b>比 YA</b> 停一下：擦掉重寫<br>🖐️ <b>張開手掌</b>停一下：送出並檢查</div>
             <div class="buttons">
               <button class="btn" id="clearBtn">擦掉</button>
               <button class="btn" id="hintBtn" hidden>提示</button>
@@ -170,8 +170,11 @@
 <script src="js/zhuyin-data.js"></script>
 <script src="js/airwriter.js"></script>
 <script src="js/progress.js"></script>
+<script src="js/sfx.js"></script>
 <script>
 (() => {
+  if (window.Sfx) { Sfx.bindClicks(); Sfx.addToggle(document.querySelector('.nav')); }
+
   const { Recognizer, Pad, speak } = AirWriter;
   const $ = id => document.getElementById(id);
   const ALL = ZHUYIN_UNITS.flatMap(u => u.symbols.map(s => ({ ...s, unit: u })));
@@ -251,13 +254,13 @@
     if (res.reason === 'small') return setFeedback('寫大一點點喔！', 'bad');
     if (res.ok) {
       progress[s.ch] = (progress[s.ch] || 0) + 1; saveProgress();
-      setFeedback(`寫對了！「${s.ch}」好棒！`, 'ok');
+      setFeedback(`寫對了！「${s.ch}」好棒！`, 'ok'); window.Sfx && Sfx.play('correct');
       speak('寫對了，好棒');
       showStars(); renderUnits();
       pad.busy = true;
       setTimeout(() => { pad.busy = false; pad.clear(); }, 1200);
     } else {
-      setFeedback(`看起來像「${res.best}」，再寫一次！`, 'bad');
+      setFeedback(`看起來像「${res.best}」，再寫一次！`, 'bad'); window.Sfx && Sfx.play('wrong');
       if (mode === 'air') $('guide').classList.add('show');
       pad.clear();
     }

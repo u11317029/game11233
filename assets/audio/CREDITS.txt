@@ -1,0 +1,8 @@
+背景音樂 bgm-jungle-prince.m4a
+  曲名：Jungle Prince
+  作者：iamoneabe
+  來源：https://opengameart.org/content/jungle-prince
+  授權：CC0 1.0（公眾領域，不需標示出處）
+  （已由 MP3 轉成 AAC 以縮小檔案）
+
+音效：全部由 js/sfx.js 在瀏覽器即時合成，沒有使用外部音效檔。

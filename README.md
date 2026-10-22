@@ -16,11 +16,12 @@
 ## 程式結構
 - `js/zhuyin-data.js`：單元、符號、例詞、注音、發音提示（要改課程內容只改這裡）
 - `js/airwriter.js`：注音辨識、MediaPipe 手勢偵測、寫字板、朗讀（遊戲與教材共用）
+- `js/sfx.js`：音效（Web Audio 合成）、背景音樂、聲音開關
 - `js/progress.js`：學習紀錄（存在瀏覽器 localStorage，首頁進度與徽章讀這裡）
 - `css/site.css`：入口、教材、學習單共用樣式
 
 ## 空中寫字手勢
-☝️ 只伸出食指：寫字　🖐️ 張開手掌停一下：送出　✊ 握拳停一下：擦掉
+☝️ 只伸出食指：寫字　✊ 握拳：暫停筆畫（移到下一筆）　✌️ 比 YA 停一下：擦掉　🖐️ 張開手掌停一下：送出
 
 手勢偵測使用 [MediaPipe Hand Landmarker](https://developers.google.com/mediapipe/solutions/vision/hand_landmarker)，需要相機與網路（第一次約下載 8MB 模型）。沒有相機也可以用滑鼠或觸控寫。
 
@@ -37,5 +38,7 @@
 ## 素材來源
 - 像素素材：[Kenney – Pixel Platformer](https://kenney.nl/assets/pixel-platformer)（CC0，`assets/kenney/`）
 - 像素字型：[俐方體11號 Cubic 11](https://github.com/ACh-K/Cubic-11)（免費字型）
+- 背景音樂：[Jungle Prince](https://opengameart.org/content/jungle-prince) by iamoneabe（CC0，`assets/audio/`）
+- 音效：全部由 `js/sfx.js` 即時合成（8-bit 風格），沒有外部音效檔
 - 注音史萊姆、害羞幽靈、墨水章魚、魔杖：程式內以像素陣列繪製（`game.html` 的 `PIX`、`buildOctopus`）
 - 小簡、龍、小綠怪、場景：作者原創插圖

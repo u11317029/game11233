@@ -324,14 +324,14 @@
     <details><summary>相機打不開怎麼辦？</summary><p>請確認瀏覽器網址列旁的相機權限是「允許」，並使用 Chrome。若仍無法使用，可以改用滑鼠或觸控在框裡寫，功能一樣。</p></details>
     <details><summary>朗讀的聲音怪怪的？</summary><p>朗讀使用裝置內建的語音，不同電腦或平板聲音會不同。ㄝ、ㄟ、ㄥ 單獨念不準，所以只念例詞，建議由老師示範發音。</p></details>
     <details><summary>學生的紀錄會被別人看到嗎？</summary><p>不會。紀錄只存在每台裝置自己的瀏覽器裡，不會上傳到任何地方；換一台裝置就是新的紀錄。</p></details>
-    <details><summary>空中寫字辨識不出來？</summary><p>請讓整隻手出現在鏡頭裡、光線充足，只伸出食指寫字，字寫大一點。寫錯兩次會出現提示字可以照著寫。</p></details>
+    <details><summary>空中寫字辨識不出來？</summary><p>請讓整隻手出現在鏡頭裡、光線充足，只伸出食指寫字，字寫大一點。寫完一筆要移到下一筆時先<b>握拳</b>，筆就不會畫線；比 ✌️ 停一下可以擦掉重寫。寫錯兩次會出現提示字可以照著寫。</p></details>
   </section>
 </main>
 
 <footer>
   <div class="in">
     <img src="assets/xiaojian_pixel.png" alt="">
-    <span>小簡的注音大冒險 · 注音教育互動網站<br><small>部分像素素材：<a href="https://kenney.nl/assets/pixel-platformer" style="font-weight:normal">Kenney Pixel Platformer</a>（CC0）・像素字型：俐方體11號 Cubic 11</small></span>
+    <span>小簡的注音大冒險 · 注音教育互動網站<br><small>部分像素素材：<a href="https://kenney.nl/assets/pixel-platformer" style="font-weight:normal">Kenney Pixel Platformer</a>（CC0）・像素字型：俐方體11號 Cubic 11・背景音樂：<a href="https://opengameart.org/content/jungle-prince" style="font-weight:normal">Jungle Prince</a> by iamoneabe（CC0）</small></span>
     <nav>
       <a href="materials.html">教材</a><a href="worksheet.html">學習單</a><a href="game.html">遊戲</a><a href="#teacher">教師專區</a>
     </nav>
@@ -341,8 +341,11 @@
 <script src="js/zhuyin-data.js"></script>
 <script src="js/airwriter.js"></script>
 <script src="js/progress.js"></script>
+<script src="js/sfx.js"></script>
 <script>
 (() => {
+  if (window.Sfx) { Sfx.bindClicks(); Sfx.addToggle(document.querySelector('.nav')); }
+
   const $ = id => document.getElementById(id);
   const speak = AirWriter.speak;
   const ALL = ZHUYIN_UNITS.flatMap(u => u.symbols.map(s => ({ ...s, unit: u })));
@@ -358,7 +361,7 @@
   $('kid').addEventListener('click', () => {
     line = (line + 1) % LINES.length;
     $('speech').textContent = LINES[line];
-    speak(LINES[line], 0.95);
+    window.Sfx && Sfx.play('select'); speak(LINES[line], 0.95);
     $('kid').classList.remove('talk'); void $('kid').offsetWidth; $('kid').classList.add('talk');
   });
 
@@ -370,7 +373,7 @@
     const size = 48 + Math.random() * 26;
     Object.assign(b.style, { left: (3 + Math.random() * 92) + '%', width: size + 'px', height: size + 'px', fontSize: size * 0.48 + 'px',
                              animationDuration: (11 + Math.random() * 8) + 's' });
-    b.addEventListener('click', () => { speak(sayOf(s)); b.classList.add('pop'); setTimeout(() => b.remove(), 350); });
+    b.addEventListener('click', () => { window.Sfx && Sfx.play('pop'); speak(sayOf(s)); b.classList.add('pop'); setTimeout(() => b.remove(), 350); });
     b.addEventListener('animationend', e => { if (e.animationName === 'rise') b.remove(); });
     bubbles.appendChild(b);
   }
@@ -430,11 +433,11 @@
     if (locked) return;
     if (ok) {
       locked = true; score++;
-      b.classList.add('right'); setFb('答對了！', 'ok');
+      b.classList.add('right'); setFb('答對了！', 'ok'); window.Sfx && Sfx.play('pop'); window.Sfx && Sfx.play('gem');
       setTimeout(() => { qi++; nextQ(); }, 900);
     } else {
       b.classList.remove('wrong'); void b.offsetWidth; b.classList.add('wrong');
-      setFb('再聽一次看看～', 'bad');
+      setFb('再聽一次看看～', 'bad'); window.Sfx && Sfx.play('wrong');
       if (!b.dataset.miss) { b.dataset.miss = 1; qs[qi].missed = true; }
       setTimeout(() => speak(qs[qi].say, 0.8), 300);
     }
@@ -450,6 +453,7 @@
       <button class="btn primary" id="warmRe">再玩一次</button></div>`;
     $('warmRe').addEventListener('click', warmStart);
     setFb('', '');
+    window.Sfx && Sfx.play(perfect === ROUNDS ? 'fanfare' : 'checkpoint');
     speak(perfect === ROUNDS ? '太厲害了' : '完成了');
   }
   function setFb(t, c) { $('warmFb').textContent = t; $('warmFb').className = 'fb ' + c; }

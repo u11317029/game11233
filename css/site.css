@@ -144,3 +144,7 @@ details, .bdg, .today .sym, .pond, .timeline, .speech,
 .know { gap: 18px !important; }
 .sheet-head img, .brand img { image-rendering: pixelated; }
 .row { gap: 12px !important; }
+
+/* 聲音開關（導覽列） */
+.nav .sound-toggle { font: inherit; font-size: 20px; background: none; border: none; cursor: pointer; padding: 4px 8px; }
+.nav .sound-toggle:hover { background: #fff; }

@@ -120,14 +120,17 @@ window.AirWriter = (() => {
   // ───────── 手勢判斷 ─────────
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   const fingerUp = (lm, tip, pip) => dist(lm[tip], lm[0]) > dist(lm[pip], lm[0]) * 1.12;
+  // ☝️ 只伸食指 = 寫字；✊ 握拳 = 暫停筆畫（移動不畫線）；✌️ 比 YA 停一下 = 擦掉；🖐️ 張開手掌停一下 = 送出
   function classify(lm) {
     const idx = fingerUp(lm, 8, 6), mid = fingerUp(lm, 12, 10), ring = fingerUp(lm, 16, 14), pinky = fingerUp(lm, 20, 18);
     const n = idx + mid + ring + pinky;
-    if (idx && !mid && !ring) return 'pen';
+    if (idx && !mid && !ring && !pinky) return 'pen';
+    if (idx && mid && !ring && !pinky) return 'peace';
     if (n >= 4) return 'open';
     if (n === 0) return 'fist';
     return 'none';
   }
+  const MODE_LABEL = { pen: '✍️ 寫字中', fist: '⏸ 暫停筆畫', peace: '✌️ 擦掉…', open: '🖐️ 送出…', none: '⏸ 暫停筆畫' };
 
   // ───────── 寫字板 ─────────
   class Pad {
@@ -226,13 +229,13 @@ window.AirWriter = (() => {
         if (!last || Math.hypot(last.x - h.x, last.y - h.y) > 0.004) this.cur.push({ x: h.x, y: h.y });
       } else this.endStroke();
 
-      if ((h.mode === 'open' || h.mode === 'fist') && stable && !this.busy) {
+      if ((h.mode === 'open' || h.mode === 'peace') && stable && !this.busy) {
         if (h.holdKind !== h.mode) { h.holdKind = h.mode; h.hold = 0; }
         h.hold += dt / 0.9;
         if (h.hold >= 1) {
           h.hold = 0; h.holdKind = '';
           if (h.mode === 'open') this.onSubmit && this.onSubmit();
-          else { this.clear(); this.onClear && this.onClear(); }
+          else { this.clear(); window.Sfx && Sfx.play('erase'); this.onClear && this.onClear(); }
           h.modeFrames = -30;    // 動作完成後短暫冷卻
         }
       } else { h.hold = 0; h.holdKind = ''; }
@@ -271,10 +274,20 @@ window.AirWriter = (() => {
       }
       if (hand.seen) {
         const x = hand.x * W, y = hand.y * H;
-        const col = hand.mode === 'pen' ? '#ffcf3f' : hand.mode === 'open' ? '#7ee081' : hand.mode === 'fist' ? '#ff7b7b' : '#cfd8e3';
-        cx.beginPath(); cx.arc(x, y, (hand.mode === 'pen' ? 9 : 13) * u, 0, Math.PI * 2);
-        cx.fillStyle = col; cx.globalAlpha = .9; cx.fill(); cx.globalAlpha = 1;
-        cx.lineWidth = 3 * u; cx.strokeStyle = '#3b2414'; cx.stroke();
+        const col = { pen: '#ffcf3f', open: '#7ee081', peace: '#ff8fc8', fist: '#9fb3c8' }[hand.mode] || '#cfd8e3';
+        const r = (hand.mode === 'pen' ? 9 : 13) * u;
+        cx.fillStyle = col; cx.globalAlpha = .9;
+        if (hand.mode === 'pen') { cx.beginPath(); cx.arc(x, y, r, 0, Math.PI * 2); cx.fill(); cx.globalAlpha = 1; cx.lineWidth = 3 * u; cx.strokeStyle = '#3b2414'; cx.stroke(); }
+        else {                                                // 暫停時游標是空心方框，看得出「筆抬起來了」
+          cx.globalAlpha = 1; cx.lineWidth = 4 * u; cx.strokeStyle = col; cx.strokeRect(x - r, y - r, r * 2, r * 2);
+          cx.lineWidth = 2 * u; cx.strokeStyle = '#3b2414'; cx.strokeRect(x - r - 3 * u, y - r - 3 * u, r * 2 + 6 * u, r * 2 + 6 * u);
+        }
+        // 左上角顯示目前的手勢
+        const label = MODE_LABEL[hand.mode] || '';
+        cx.font = `${18 * u}px "Cubic 11","PingFang TC",sans-serif`; cx.textBaseline = 'top';
+        const tw = cx.measureText(label).width;
+        cx.fillStyle = 'rgba(255,250,235,.92)'; cx.fillRect(8 * u, 8 * u, tw + 16 * u, 28 * u);
+        cx.fillStyle = '#3b2414'; cx.fillText(label, 16 * u, 13 * u);
         if (hand.hold > 0) {           // 張手 / 握拳的倒數圈
           cx.beginPath(); cx.arc(x, y, 26 * u, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, hand.hold));
           cx.lineWidth = 6 * u; cx.strokeStyle = col; cx.stroke();
