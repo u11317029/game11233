@@ -10,11 +10,23 @@
   body { background-image: none; font-family: var(--font); user-select: none; -webkit-user-select: none; touch-action: none; }
   canvas#game { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; image-rendering: crisp-edges; }
 
-  .hud { position: fixed; top: 14px; left: 16px; display: flex; gap: 10px; pointer-events: none; }
+  .hud { position: fixed; top: 14px; left: 16px; display: flex; flex-wrap: wrap; gap: 10px; pointer-events: none; max-width: calc(100vw - 190px); }
   .pill { background: rgba(255,250,235,.92); border: 3px solid #3b2414; border-radius: 999px; padding: 6px 16px;
           font-size: 20px; font-weight: 800; color: #3b2414; box-shadow: 0 3px 0 #3b2414; display: flex; align-items: center; gap: 6px; }
   .pill b { color: #d0552b; }
   .pill.hidden { display: none; }
+  .hearts { gap: 2px; padding: 4px 10px; }
+  .heart { width: 27px; height: 27px; background: url(assets/kenney/tiles.png) -108px -54px / 540px 243px; image-rendering: pixelated; }
+  .heart.empty { background-position: -162px -54px; }
+  .heart.lose { animation: lose .5s steps(4); }
+  @keyframes lose { 50% { transform: scale(1.5); } }
+  .magic-pill b { color: #7b3fbf; }
+  .bestiary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 4px; text-align: center; }
+  .bestiary div { background: #fff; padding: 6px 4px; font-size: 13px; line-height: 1.35; box-shadow: 0 -3px 0 #3b2414, 0 3px 0 #3b2414, -3px 0 0 #3b2414, 3px 0 0 #3b2414; margin: 3px; }
+  .bestiary canvas { width: 48px; height: 48px; image-rendering: pixelated; display: block; margin: 0 auto 2px; }
+  .bestiary b { display: block; font-size: 14px; }
+  .bestiary .no { color: #c0392b; } .bestiary .ok { color: #2e9d4a; }
+  .card { max-height: 94vh; overflow: auto; }
   .gem-icon { width: 16px; height: 20px; background: #4fc3f7; border: 2.5px solid #3b2414; clip-path: polygon(50% 0, 100% 35%, 50% 100%, 0 35%); }
 
   .overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(40,90,130,.35); }
@@ -79,6 +91,7 @@
                   font: inherit; font-size: 30px; font-weight: 900; color: #3b2414; box-shadow: 0 4px 0 #3b2414; touch-action: none; }
   .touch button.on { transform: translateY(3px); box-shadow: 0 1px 0 #3b2414; background: #ffe7a8; }
   .touch .jump { width: 92px; height: 92px; background: rgba(240,138,60,.9); color: #fff; font-size: 26px; }
+  .touch .magic { width: 76px; height: 76px; background: rgba(199,146,234,.95); color: #fff; font-size: 24px; }
   @media (pointer: coarse) { .touch { display: flex; } }
 </style>
 </head>
@@ -86,9 +99,11 @@
 <canvas id="game"></canvas>
 
 <div class="hud">
+  <div class="pill hearts" id="hearts"></div>
   <div class="pill">距離 <b id="dist">0</b> 公尺</div>
   <div class="pill"><span class="gem-icon"></span>寶石 <b id="gems">0</b></div>
   <div class="pill hidden" id="zhuyinPill">注音 <b id="coins">0</b></div>
+  <div class="pill magic-pill hidden" id="magicPill">🪄 魔法 <b id="magicT">0</b> 秒</div>
 </div>
 <div class="toast" id="toast"></div>
 <a class="home" href="index.html">🏠 回首頁</a>
@@ -97,8 +112,9 @@
   <div class="card">
     <h1>小簡的注音大冒險</h1>
     <p>先來小試身手！跳過小怪物、收集寶石，<br>一路往前走找到大怪物吧！</p>
-    <p><kbd>←</kbd> <kbd>→</kbd> 移動　<kbd>空白鍵</kbd> / <kbd>↑</kbd> 跳躍</p>
-    <p style="font-size:15px;opacity:.75">從上面踩小怪物可以打倒牠，按久一點跳得更高</p>
+    <p><kbd>←</kbd> <kbd>→</kbd> 移動　<kbd>空白鍵</kbd> / <kbd>↑</kbd> 跳躍　<kbd>X</kbd> 魔法</p>
+    <p style="font-size:15px;opacity:.8">❤️ 有 3 顆愛心　❓ 從下面頂問號方塊　🪄 拿到魔杖可以發射魔法　🚩 碰到旗子會存檔　🍄 彈簧蘑菇跳很高</p>
+    <div class="bestiary" id="bestiary"></div>
     <button class="btn" id="startBtn">開始冒險</button>
   </div>
 </div>
@@ -150,6 +166,7 @@
   <button data-key="right">▶</button>
 </div>
 <div class="touch right">
+  <button class="magic" data-key="magic" hidden>魔</button>
   <button class="jump" data-key="jump">跳</button>
 </div>
 
@@ -192,7 +209,7 @@
   const BIOME_ORDER = ['grass', 'beach'];
   const biomeAt = x => BIOME_ORDER[Math.floor(Math.max(0, x) / BIOME_LEN) % BIOME_ORDER.length];
 
-  const IMG = { player: null, boss: null, minion: null, fire: null };
+  const IMG = { player: null, boss: null, minion: null, fire: null, tiles: null, chars: null, octo: null, slime: null, ghost: null, ghostShy: null, wand: null };
 
   // 怪物原圖左邊有火球、左下角有小怪物，先把它們擦掉
   function cleanBoss(img) {
@@ -205,6 +222,76 @@
     g.clearRect(0, 236 * sy, 24 * sx, 108 * sy);
     g.clearRect(0, 436 * sy, 98 * sx, 90 * sy);
     return c;
+  }
+
+  // ───────── 像素素材 ─────────
+  // Kenney「Pixel Platformer」（CC0）：tiles.png 每格 18px、20 欄；chars.png 每格 24px、9 欄
+  const TILE = { heart: 44, gem: 67, spikes: 68, qblock: 10, used: 29, flag: 111, flag2: 112, pole: 131,
+                 spring: 108, sign: 85, sprout: 124, grass: 125, tree: 126, cactus: 127, mush: 128, fenceL: 105, fence: 106 };
+  const CHAR = { spike: 8, blockCalm: 11, blockMad: 12, bat: [24, 25, 26] };
+  function drawSheet(img, cols, cell, i, x, y, w, h, flip = false) {
+    if (!img) return;
+    ctx.save(); ctx.imageSmoothingEnabled = false;
+    ctx.translate(x + (flip ? w : 0), y); if (flip) ctx.scale(-1, 1);
+    ctx.drawImage(img, (i % cols) * cell, Math.floor(i / cols) * cell, cell, cell, 0, 0, w, h);
+    ctx.restore();
+  }
+  const drawTile = (i, x, y, size, flip) => drawSheet(IMG.tiles, 20, 18, i, x, y, size, size, flip);
+  const drawChar = (i, x, y, size, flip) => drawSheet(IMG.chars, 9, 24, i, x, y, size, size, flip);
+
+  // 自己畫的像素怪物：每個字母代表一種顏色，'.' 是透明
+  const PIX = {
+    slime: { pal: { k: '#2b1a12', g: '#6fd36b', G: '#3fa34d', h: '#c8f7c0', w: '#ffffff', b: '#1b1b1b', p: '#ff8fa3' }, rows: [
+      '......kkkk......', '....kkhhggkk....', '...khhgggggGk...', '..khgggggggggk..', '.khgwbgggggwbgk.', '.kggwbgggggwbgk.',
+      'kgggggpgggpggggk', 'kggggggkkgggggGk', 'kgggggggggggggGk', 'kGgggggggggggGGk', '.kGGGGGGGGGGGGk.', '..kkkkkkkkkkkk..'] },
+    ghost: { pal: { k: '#3b2a5a', w: '#f4f1ff', b: '#2b1a3a', p: '#ffb3c7', v: '#c9b8ff' }, rows: [
+      '....kkkkkk....', '...kwwwwwwk...', '..kwwwwwwwwk..', '.kwwwwwwwwwwk.', '.kwwbbwwbbwwk.', 'kwwwbbwwbbwwwk', 'kwwwwwwwwwwwwk',
+      'kwpwwwwwwwwpwk', 'kwwwwwbbwwwwwk', 'kwwwwwwwwwwwwk', 'kwwwwwwwwwwwwk', 'kwwkwwwkwwwkwk', 'kwk.kwk.kwk.kk', '.k...k...k....'] },
+    ghostShy: { pal: { k: '#3b2a5a', w: '#f4f1ff', b: '#2b1a3a', p: '#ffb3c7', v: '#c9b8ff' }, rows: [
+      '....kkkkkk....', '...kwwwwwwk...', '..kwwwwwwwwk..', '.kwwwwwwwwwwk.', '.kwwvvwwvvwwk.', 'kwwvvvwwvvvwwk', 'kwwwvvwwvvwwwk',
+      'kwpwwwwwwwwpwk', 'kwwwwwwwwwwwwk', 'kwwwwwwwwwwwwk', 'kwwwwwwwwwwwwk', 'kwwkwwwkwwwkwk', 'kwk.kwk.kwk.kk', '.k...k...k....'] },
+    wand: { pal: { y: '#ffcf3f', Y: '#f08a3c', w: '#fffbe0' }, outline: true, rows: [
+      '....y....', '...yYy...', 'yyyYwYyyy', '.yYwwwYy.', '..yYwYy..', '..yY.Yy..', '.yY...Yy.', '.y.....y.'] },
+  };
+  // 把像素陣列畫成小圖；outline = 自動在外圍加一圈深色描邊
+  function pixelCanvas(W, H, getColor, outline) {
+    const pad = outline ? 1 : 0, c = document.createElement('canvas');
+    c.width = W + pad * 2; c.height = H + pad * 2;
+    const g = c.getContext('2d');
+    const at = (x, y) => (x >= 0 && y >= 0 && x < W && y < H) ? getColor(x, y) : null;
+    for (let y = -pad; y < H + pad; y++) for (let x = -pad; x < W + pad; x++) {
+      let col = at(x, y);
+      if (!col && outline && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => at(x + a, y + b))) col = '#2b1a12';
+      if (col) { g.fillStyle = col; g.fillRect(x + pad, y + pad, 1, 1); }
+    }
+    return c;
+  }
+  const buildSprite = ({ pal, rows, outline }) => pixelCanvas(rows[0].length, rows.length, (x, y) => pal[rows[y][x]] || null, outline);
+
+  // 墨水章魚大怪物：用程式一點一點畫出來（40×40 像素）
+  function buildOctopus() {
+    const S = 40, map = new Array(S * S).fill(null);
+    const set = (x, y, col) => { if (x >= 0 && y >= 0 && x < S && y < S) map[y * S + x] = col; };
+    for (let y = 2; y < 27; y++) for (let x = 5; x < 35; x++) {          // 圓圓的頭
+      const dx = (x - 19.5) / 14, dy = (y - 14) / 12.5;
+      if (dx * dx + dy * dy <= 1) set(x, y, (dx < -0.3 && dy < -0.25) ? '#c89af0' : (dx > 0.5 || dy > 0.62) ? '#6c3aa0' : '#9b59d0');
+    }
+    [7, 12, 17, 22, 27, 32].forEach((lx, i) => {                           // 六隻觸手
+      for (let y = 23; y < 39; y++) {
+        const off = Math.round(Math.sin((y - 23) / 3.5 + i * 1.3) * 1.6 + (i < 3 ? -1 : 1) * (y - 23) / 7);
+        for (let w = -1; w <= 1; w++) set(lx + off + w, y, y > 35 ? '#6c3aa0' : '#9b59d0');
+        if ((y - 25) % 4 === 0) set(lx + off, y, '#ffb3d9');
+      }
+    });
+    for (const ex of [12, 23]) {                                            // 眼睛
+      for (let y = 11; y < 17; y++) for (let x = ex; x < ex + 5; x++) set(x, y, '#ffffff');
+      for (let y = 13; y < 17; y++) for (let x = ex + 1; x < ex + 4; x++) set(x, y, '#1b1b1b');
+      set(ex + 1, 13, '#ffffff');
+    }
+    for (let i = 0; i < 6; i++) { set(11 + i, 8 + (i >> 1), '#3b1a5a'); set(28 - i, 8 + (i >> 1), '#3b1a5a'); }   // 生氣的眉毛
+    for (let x = 17; x < 23; x++) set(x, 21, '#3b1a5a');
+    set(16, 20, '#3b1a5a'); set(23, 20, '#3b1a5a');
+    return pixelCanvas(S, S, (x, y) => map[y * S + x], true);
   }
 
   // ───────── 亂數 ─────────
@@ -305,9 +392,11 @@
   }
 
   // ───────── 世界生成（無限往右） ─────────
-  // 收集物：小試身手區段是寶石，打敗大怪物之後才出現注音
-  let platforms = [], items = [], minions = [], particles = [], popups = [], flames = [];
-  let gen = null, boss = null;
+  // 收集物：小試身手區段是寶石，打敗第一隻大怪物之後才出現注音
+  let platforms = [], items = [], enemies = [], particles = [], popups = [], flames = [];
+  let qblocks = [], springs = [], spikes = [], decos = [], flags = [], bolts = [];
+  let gen = null, boss = null, checkpoint = { x: 60, y: 420 };
+  const KS = 45;                                   // Kenney 圖塊在世界裡的大小（18px → 45）
 
   function addPlatform(x, y, w, floating) {
     const h = floating ? randi(40, 52) : FLOOR - y;
@@ -324,37 +413,83 @@
         : { kind: 'gem', x: x + i * 38, y, color: GEM_COLORS[randi(0, GEM_COLORS.length - 1)], t: Math.random() * 6 });
     }
   }
-  function addMinion(seg) {
-    const w = 62, h = 44;
-    minions.push({ x: rand(seg.x + 20, seg.x + seg.w - w - 20), y: seg.y - h, w, h, dir: -1,
-                   minX: seg.x + 6, maxX: seg.x + seg.w - w - 6, speed: rand(45, 80), t: Math.random() * 6, dead: 0 });
+
+  // ───────── 怪物 ─────────
+  // stomp：可以踩；magicOnly：只有魔法打得倒
+  const ENEMY = {
+    minion: { w: 62, h: 44, stomp: true, walker: true, name: '小綠怪' },
+    slime:  { w: 56, h: 42, stomp: true, walker: true, name: '注音史萊姆' },
+    bat:    { w: 58, h: 58, stomp: true, name: '蝙蝠' },
+    spike:  { w: 54, h: 54, stomp: false, walker: true, name: '刺刺球' },
+    block:  { w: 62, h: 62, stomp: false, name: '生氣方塊' },
+    ghost:  { w: 56, h: 56, stomp: false, magicOnly: true, name: '害羞幽靈' },
+  };
+  function addEnemy(type, seg) {
+    const d = ENEMY[type], e = { type, w: d.w, h: d.h, dir: -1, t: Math.random() * 6, dead: 0, vy: 0 };
+    if (d.walker) Object.assign(e, { x: rand(seg.x + 20, seg.x + seg.w - d.w - 20), y: seg.y - d.h, groundY: seg.y,
+                                     minX: seg.x + 6, maxX: seg.x + seg.w - d.w - 6, speed: type === 'spike' ? 85 : rand(45, 80), hop: rand(.4, 1.4), rot: 0 });
+    if (type === 'bat') Object.assign(e, { baseX: seg.x + seg.w / 2, baseY: seg.y - rand(140, 185), range: rand(90, 170), x: seg.x + seg.w / 2, y: seg.y - 160 });
+    if (type === 'block') Object.assign(e, { x: seg.x + seg.w / 2 - d.w / 2, baseY: seg.y - 230, y: seg.y - 230, groundY: seg.y, mode: 'wait', timer: 0 });
+    if (type === 'ghost') Object.assign(e, { x: seg.x + seg.w * 0.7, y: seg.y - rand(110, 170), shy: false });
+    enemies.push(e);
+    return e;
+  }
+  // 越往前走，出現的怪物種類越多
+  function pickEnemy(seg, meters, afterBoss) {
+    const pool = [['minion', 1]];
+    if (meters > 12) pool.push(['slime', 1]);
+    if (meters > 25) pool.push(['bat', .9]);
+    if (meters > 40) pool.push(['spike', .7]);
+    if (meters > 55) pool.push(['block', .6]);
+    if (afterBoss) pool.push(['ghost', .7]);
+    const ok = pool.filter(([t]) => !(ENEMY[t].walker && seg.w < 260) && !(t === 'block' && seg.w < 180));
+    let r = Math.random() * ok.reduce((a, [, w]) => a + w, 0);
+    for (const [t, w] of ok) if ((r -= w) <= 0) return t;
+    return null;
+  }
+
+  // ───────── 裝飾（不會擋路） ─────────
+  function decorate(seg) {
+    const beach = seg.biome === 'beach';
+    const pool = beach ? [TILE.cactus, TILE.sprout, TILE.grass, TILE.mush] : [TILE.tree, TILE.sprout, TILE.grass, TILE.mush, TILE.fence];
+    const n = Math.floor(seg.w / 160) + (chance(.5) ? 1 : 0);
+    for (let i = 0; i < n; i++) {
+      const tile = pool[randi(0, pool.length - 1)], size = tile === TILE.tree || tile === TILE.cactus ? 54 : 40;
+      decos.push({ tile, x: rand(seg.x + 8, seg.x + seg.w - size - 8), y: seg.y - size + 4, size, flip: chance(.5) });
+    }
   }
 
   function resetWorld() {
-    platforms = []; items = []; minions = []; particles = []; popups = []; flames = [];
-    gen = { x: 900, y: 420, zhuyinFrom: Infinity, bossPlaced: false };
-    addPlatform(-400, 420, 1300, false);       // 起點平地
+    platforms = []; items = []; enemies = []; particles = []; popups = []; flames = [];
+    qblocks = []; springs = []; spikes = []; decos = []; flags = []; bolts = [];
+    gen = { x: 900, y: 420, zhuyinFrom: Infinity, nextBossAt: BOSS_AT, bossCount: 0, nextFlagAt: 1800 };
+    const start = addPlatform(-400, 420, 1300, false);       // 起點平地
+    decorate(start);
+    decos.push({ tile: TILE.sign, x: 170, y: 420 - KS + 4, size: KS });
     addItemRow(420, 360, 3);
-    boss = null;
+    boss = null; checkpoint = { x: 60, y: 420 };
   }
 
-  // 大怪物的競技場：一段長平地，怪物站在右邊
+  // 大怪物的競技場：一段長平地，怪物站在右邊；龍和墨水章魚輪流出現
   function placeBoss() {
     const ay = clamp(gen.y, 380, 440);
-    const gap = 0;
-    const arena = addPlatform(gen.x + gap, ay, 1150, false);
-    const h = 230, w = h * 447 / 520;
-    boss = { x: arena.x + 760, y: ay - h, w, h, state: 'idle', t: 0, hit: 0 };
+    const arena = addPlatform(gen.x, ay, 1150, false);
+    const kind = gen.bossCount % 2 === 0 ? 'dragon' : 'octopus';
+    const h = 230, w = kind === 'dragon' ? h * 447 / 520 : h;
+    boss = { kind, img: kind === 'dragon' ? IMG.boss : IMG.octo, x: arena.x + 760, y: ay - h, w, h, state: 'idle', t: 0, hit: 0 };
+    flags.push({ x: arena.x + 160, y: ay, on: false, t: 0 });     // 打怪前存檔
     gen.x = arena.x + arena.w;
     gen.y = ay;
-    gen.zhuyinFrom = boss.x + w;          // 大怪物之後開始出現注音
-    gen.bossPlaced = true;
+    if (gen.zhuyinFrom === Infinity) gen.zhuyinFrom = boss.x + w;   // 第一隻大怪物之後開始出現注音
+    gen.nextBossAt = gen.x + 5200;                                   // 約 100 公尺後再出現下一隻
+    gen.nextFlagAt = gen.x + 1700;
+    gen.bossCount++;
   }
 
   // 依跳躍能力（最高約 160、最遠約 220）設計，確保每一段都跳得過去
   function generateUntil(limitX) {
     while (gen.x < limitX) {
-      if (!gen.bossPlaced && gen.x >= BOSS_AT) { placeBoss(); continue; }
+      if (gen.x >= gen.nextBossAt && (!boss || boss.state === 'defeated')) { placeBoss(); continue; }
       const roll = Math.random();
       let gap = 0;
       if (roll < 0.18) {
@@ -365,6 +500,10 @@
         addPlatform(fx, fy, fw, true);
         addItemRow(fx + fw / 2 - 19, fy - 50, 2);
         gen.lastFloatY = fy;
+        if (fx > 1300 && chance(.35)) {                        // 坑洞上空有蝙蝠
+          const e = addEnemy('bat', { x: fx - 60, y: fy + 40, w: fw + 120 });
+          e.baseY = fy - 150;
+        }
       } else if (roll < 0.55) {
         gap = rand(60, 140);
       }
@@ -380,13 +519,28 @@
       const gx = gen.x + gap;
       const gw = rand(170, 520);
       const seg = addPlatform(gx, ny, gw, false);
+      const meters = gx / 50, afterBoss = gx > gen.zhuyinFrom;
+      decorate(seg);
 
-      // 小怪物：在夠寬的地面上走來走去（起點附近先不放）
-      if (gx > 1300 && gw > 260 && chance(.55)) addMinion(seg);
+      let busy = false;
+      if (gx >= gen.nextFlagAt && gw > 200) {                  // 存檔旗子（這段不放怪物）
+        flags.push({ x: gx + gw / 2, y: ny, on: false, t: 0 });
+        gen.nextFlagAt = gx + 1700;
+        busy = true;
+      } else if (gx > 1300 && chance(.6)) {
+        const t = pickEnemy(seg, meters, afterBoss);
+        if (t) { addEnemy(t, seg); busy = true; }
+      }
+      if (!busy && meters > 35 && gw > 400 && chance(.25)) {   // 尖刺陷阱：放在中間，兩邊留路
+        const n = randi(1, 2);
+        spikes.push({ x: gx + gw / 2 - n * KS / 2, y: ny - KS, w: n * KS, h: KS });
+      }
 
       if (chance(.35)) addItemRow(gx + rand(20, Math.max(30, gw - 140)), ny - 46, randi(2, 3));
 
-      if (chance(.65)) {
+      let floatingHere = false;
+      if (chance(.55)) {
+        floatingHere = true;
         let fw = rand(90, 190);
         let fx = gx + rand(-40, Math.max(-30, gw - fw + 30));
         let fy = ny - rand(105, 135);
@@ -404,6 +558,19 @@
           fx = nx; fw = nw; fy = nyF; level++;
         }
       }
+      if (!floatingHere && meters > 6 && gw > 170 && chance(.4)) {
+        // 問號方塊：從下面頂會掉出寶石、愛心或魔杖
+        const n = gw > 300 && chance(.4) ? 2 : 1;
+        const bx = gx + rand(40, gw - 40 - n * KS);
+        for (let i = 0; i < n; i++) qblocks.push({ x: bx + i * KS, y: ny - 195, w: KS, h: KS, used: false, bump: 0, floating: true });
+      } else if (!floatingHere && meters > 18 && gw > 230 && chance(.2)) {
+        // 彈簧蘑菇 + 高空獎勵台
+        const sx = gx + gw * 0.3;
+        springs.push({ x: sx, y: ny - KS, w: KS, h: KS, squash: 0 });
+        const hy = Math.max(70, ny - 340);
+        addPlatform(sx - 50, hy, 170, true);
+        addItemRow(sx - 10, hy - 46, 3);
+      }
 
       gen.x = gx + gw;
       gen.y = ny;
@@ -411,24 +578,28 @@
   }
 
   function cleanup(camX) {
-    const cut = camX - 600;
+    const cut = Math.min(camX - 600, checkpoint.x - 500);   // 存檔點附近的地形要留著，跌倒時才回得去
     platforms = platforms.filter(p => p.x + p.w > cut);
     items = items.filter(c => !c.got && c.x > cut);
-    minions = minions.filter(m => m.x > cut && m.dead < 0.6);
+    enemies = enemies.filter(m => (m.x > cut || m.type === 'bat') && m.dead < 0.6 && (m.type !== 'bat' || m.baseX > cut));
+    for (const k of ['qblocks', 'springs', 'spikes', 'decos', 'flags']) {
+      const arr = { qblocks, springs, spikes, decos, flags }[k].filter(o => o.x + (o.w || o.size || 60) > cut);
+      if (k === 'qblocks') qblocks = arr; else if (k === 'springs') springs = arr; else if (k === 'spikes') spikes = arr; else if (k === 'decos') decos = arr; else flags = arr;
+    }
   }
 
   // ───────── 玩家 ─────────
-  const P_W = 40, P_H = 72;
+  const P_W = 40, P_H = 72, MAX_HP = 3, MAGIC_TIME = 20;
   const player = {};
   function resetPlayer() {
     Object.assign(player, { x: 60, y: 420 - P_H, vx: 0, vy: 0, onGround: true, face: 1, coyote: 0, buffer: 0,
-                            walkT: 0, squash: 1, blink: 0, safeX: 60, safeY: 420 - P_H, ground: null });
+                            walkT: 0, squash: 1, blink: 0, safeX: 60, safeY: 420 - P_H, ground: null, hp: MAX_HP, magic: 0, shootCd: 0 });
   }
 
   // ───────── 輸入 ─────────
-  const keys = { left: false, right: false, jump: false };
-  let jumpPressed = false;
-  const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'jump', KeyW: 'jump', Space: 'jump' };
+  const keys = { left: false, right: false, jump: false, magic: false };
+  let jumpPressed = false, magicPressed = false;
+  const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'jump', KeyW: 'jump', Space: 'jump', KeyX: 'magic', KeyK: 'magic' };
   addEventListener('keydown', e => {
     const k = KEYMAP[e.code];
     if (state === 'start' && (k || e.code === 'Enter')) { e.preventDefault(); startGame(); return; }
@@ -436,14 +607,15 @@
     if (!k) return;
     e.preventDefault();
     if (k === 'jump' && !keys.jump) jumpPressed = true;
+    if (k === 'magic' && !keys.magic) magicPressed = true;
     keys[k] = true;
   });
   addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
-  addEventListener('blur', () => { keys.left = keys.right = keys.jump = false; });
+  addEventListener('blur', () => { keys.left = keys.right = keys.jump = keys.magic = false; });
 
   document.querySelectorAll('.touch button').forEach(btn => {
     const k = btn.dataset.key;
-    const down = e => { e.preventDefault(); if (state === 'start') startGame(); if (k === 'jump' && !keys.jump) jumpPressed = true; keys[k] = true; btn.classList.add('on'); };
+    const down = e => { e.preventDefault(); if (state === 'start') startGame(); if (k === 'jump' && !keys.jump) jumpPressed = true; if (k === 'magic') magicPressed = true; keys[k] = true; btn.classList.add('on'); };
     const up = e => { e.preventDefault(); keys[k] = false; btn.classList.remove('on'); };
     btn.addEventListener('pointerdown', down);
     btn.addEventListener('pointerup', up);
@@ -456,6 +628,7 @@
   let state = 'start';
   const cam = { x: -60, shake: 0 };
   let gemCount = 0, coinCount = 0, bestX = 0;
+  const magicPill = document.getElementById('magicPill'), magicT = document.getElementById('magicT'), magicBtn = document.querySelector('.touch .magic');
   const distEl = document.getElementById('dist'), gemEl = document.getElementById('gems'), coinEl = document.getElementById('coins');
   const startScreen = document.getElementById('startScreen'), bossScreen = document.getElementById('bossScreen');
   const toastEl = document.getElementById('toast');
@@ -479,7 +652,7 @@
     if (state !== 'boss-wait') return;
     bossScreen.classList.add('hidden');
     state = 'duel';
-    window.ZhuyinDuel.open(IMG.boss, () => defeatBoss());
+    window.ZhuyinDuel.open(boss.img, () => defeatBoss());
   }
 
   function saveGameRecord(extra = 0) {
@@ -499,7 +672,52 @@
     for (let i = 0; i < 24; i++) particles.push({ x: boss.x + boss.w / 2, y: boss.y + boss.h / 2, vx: rand(-320, 320), vy: rand(-420, -60), t: 0, life: .9, star: true });
     state = 'play';
     document.getElementById('zhuyinPill').classList.remove('hidden');
-    toast('打敗大怪物了！接下來收集注音符號吧！', 3);
+    toast(gen.bossCount > 1 ? '又打敗一隻大怪物了！繼續往前冒險！' : '打敗大怪物了！接下來收集注音符號吧！', 3);
+    player.hp = MAX_HP; renderHearts();
+  }
+
+  // ───────── 愛心、受傷、存檔點 ─────────
+  const heartsEl = document.getElementById('hearts');
+  function renderHearts(lost = -1) {
+    heartsEl.innerHTML = Array.from({ length: MAX_HP }, (_, i) =>
+      `<span class="heart ${i < player.hp ? '' : 'empty'} ${i === lost ? 'lose' : ''}"></span>`).join('');
+  }
+  function hurt(fromX) {
+    const p = player;
+    if (p.blink > 0 || state !== 'play') return;
+    p.hp--; renderHearts(p.hp);
+    const away = Math.sign((p.x + P_W / 2) - fromX) || -1;
+    p.vx = away * 300; p.vy = -480; p.bounce = true; p.onGround = false; p.blink = 1.5;
+    cam.shake = 0.2;
+    if (p.hp <= 0) knockOut();
+  }
+  function knockOut() {
+    const p = player;
+    toast('小簡跌倒了！從 🚩 存檔點重新出發', 2.6);
+    p.hp = MAX_HP; renderHearts();
+    p.x = checkpoint.x; p.y = checkpoint.y - P_H; p.vx = 0; p.vy = 0; p.blink = 2; p.magic = 0;
+    cam.x = Math.min(cam.x, checkpoint.x - viewW * 0.3);
+    for (const e of enemies) if (Math.abs(e.x - checkpoint.x) < 260) e.x += 260;   // 不要一出生就撞到怪物
+  }
+  function killEnemy(e, byMagic) {
+    e.dead = 0.001;
+    gemCount++;
+    popups.push({ x: e.x + e.w / 2, y: e.y, text: '+1', t: 0 });
+    for (let i = 0; i < 10; i++) particles.push({ x: e.x + e.w / 2, y: e.y + e.h / 2, vx: rand(-200, 200), vy: rand(-260, -60), t: 0, life: .55, star: true, magic: byMagic });
+  }
+  function hitBlock(b) {
+    b.bump = 0.18;
+    if (b.used) return;
+    b.used = true;
+    const cx = b.x + b.w / 2;
+    const r = Math.random();
+    if (r < 0.22 && player.magic <= 0) items.push({ kind: 'wand', x: cx, y: b.y - 30, baseY: b.y - 34, rise: 0, t: 0 });
+    else if (r < 0.45 && player.hp < MAX_HP) items.push({ kind: 'heart', x: cx, y: b.y - 30, baseY: b.y - 34, rise: 0, t: 0 });
+    else {
+      gemCount += 3;
+      popups.push({ x: cx, y: b.y - 10, text: '+3', t: 0, small: true });
+      for (let i = 0; i < 3; i++) particles.push({ x: cx, y: b.y, vx: (i - 1) * 90, vy: -420, t: 0, life: .7, gem: GEM_COLORS[randi(0, GEM_COLORS.length - 1)] });
+    }
   }
 
   // ───────── 物理 ─────────
@@ -544,6 +762,12 @@
         p.vx = 0;
       }
     }
+    for (const b of qblocks) {
+      if (overlap(p.x, p.y + 4, P_W, P_H - 8, b)) {
+        if (p.x + P_W / 2 < b.x + b.w / 2) p.x = b.x - P_W; else p.x = b.x + b.w;
+        p.vx = 0;
+      }
+    }
 
     // Y 軸
     const prevBottom = p.y + P_H;
@@ -558,6 +782,11 @@
         if (p.vy >= 0 && prevBottom <= b.y + 12) land(b);
         else if (p.vy < 0) { p.y = b.y + b.h; p.vy = 0; }
       }
+    }
+    for (const b of qblocks) {
+      if (!overlap(p.x + 4, p.y, P_W - 8, P_H, b)) continue;
+      if (p.vy >= 0 && prevBottom <= b.y + 12) land(b);
+      else if (p.vy < 0) { p.y = b.y + b.h; p.vy = 0; hitBlock(b); }
     }
     function land(b) {
       p.y = b.y - P_H; p.vy = 0; p.onGround = true; p.ground = b;
@@ -576,33 +805,105 @@
         .sort((a, b) => Math.abs(Math.max(a.x + 10, minX) - p.safeX) - Math.abs(Math.max(b.x + 10, minX) - p.safeX))[0];
       p.x = Math.min(Math.max(g.x + 10, minX, p.safeX), g.x + g.w - P_W - 10);
       p.y = g.y - P_H; p.vx = 0; p.vy = 0; p.blink = 1.2; p.onGround = true; p.ground = g;
+      p.hp--; renderHearts(p.hp);
+      if (p.hp <= 0) knockOut();
     }
 
-    // 小怪物：巡邏、踩扁、被撞到會彈開
-    for (const m of minions) {
-      if (m.dead) { m.dead += dt; continue; }
-      m.t += dt;
-      m.x += m.dir * m.speed * dt;
-      if (m.x < m.minX) { m.x = m.minX; m.dir = 1; }
-      if (m.x > m.maxX) { m.x = m.maxX; m.dir = -1; }
-      const hb = { x: m.x + 8, y: m.y + 10, w: m.w - 16, h: m.h - 10 };
-      if (!overlap(p.x, p.y, P_W, P_H, hb)) continue;
-      if (p.vy > 0 && prevBottom <= hb.y + 14) {
-        m.dead = 0.001;
-        p.vy = keys.jump ? -720 : -520; p.bounce = true; p.squash = 1.2;
-        gemCount++;
-        popups.push({ x: m.x + m.w / 2, y: m.y, text: '+1', t: 0 });
-        for (let i = 0; i < 8; i++) particles.push({ x: m.x + m.w / 2, y: m.y + 10, vx: rand(-180, 180), vy: rand(-240, -60), t: 0, life: .5, star: true });
-      } else if (p.blink <= 0) {
-        const away = Math.sign((p.x + P_W / 2) - (m.x + m.w / 2)) || -1;
-        p.vx = away * 300; p.vy = -460; p.bounce = true; p.onGround = false; p.blink = 1.3;
-        cam.shake = 0.18;
-        if (gemCount > 0) {
-          gemCount--;
-          particles.push({ x: p.x + P_W / 2, y: p.y, vx: -away * 120, vy: -300, t: 0, life: .8, gem: GEM_COLORS[1] });
+    // ───── 怪物 ─────
+    const pcx = p.x + P_W / 2;
+    for (const e of enemies) {
+      if (e.dead) { e.dead += dt; continue; }
+      e.t += dt;
+      const d = ENEMY[e.type];
+      if (d.walker) {
+        e.x += e.dir * e.speed * dt;
+        if (e.x < e.minX) { e.x = e.minX; e.dir = 1; }
+        if (e.x > e.maxX) { e.x = e.maxX; e.dir = -1; }
+        if (e.type === 'spike') e.rot += e.dir * e.speed * dt / 26;
+        if (e.type === 'slime') {                       // 史萊姆一跳一跳
+          e.hop -= dt;
+          if (e.hop <= 0 && e.y + e.h >= e.groundY) { e.vy = -rand(380, 520); e.hop = rand(.9, 1.6); }
+          e.vy += G * 0.8 * dt; e.y += e.vy * dt;
+          if (e.y + e.h >= e.groundY) { e.y = e.groundY - e.h; e.vy = 0; }
         }
+      } else if (e.type === 'bat') {
+        const prev = e.x;
+        e.x = e.baseX + Math.sin(e.t * 0.9) * e.range - e.w / 2;
+        e.y = e.baseY + Math.sin(e.t * 3.2) * 28;
+        e.dir = e.x < prev ? -1 : 1;
+      } else if (e.type === 'block') {                  // 生氣方塊：小簡走到下面就砸下來
+        if (e.mode === 'wait' && Math.abs(pcx - (e.x + e.w / 2)) < 75 && p.y > e.y) { e.mode = 'fall'; e.vy = 0; }
+        if (e.mode === 'fall') {
+          e.vy += 2800 * dt; e.y += e.vy * dt;
+          if (e.y + e.h >= e.groundY) { e.y = e.groundY - e.h; e.mode = 'land'; e.timer = .9; cam.shake = Math.max(cam.shake, .12); puff(e.x + e.w / 2, e.groundY, 6); }
+        } else if (e.mode === 'land') { e.timer -= dt; if (e.timer <= 0) e.mode = 'rise'; }
+        else if (e.mode === 'rise') { e.y -= 110 * dt; if (e.y <= e.baseY) { e.y = e.baseY; e.mode = 'wait'; } }
+      } else if (e.type === 'ghost') {                  // 害羞幽靈：小簡看著牠就停下來遮臉
+        const dx = pcx - (e.x + e.w / 2), dy = (p.y + 20) - (e.y + e.h / 2);
+        e.shy = Math.sign(-dx) === p.face && Math.abs(dx) < viewW;
+        if (!e.shy && Math.abs(dx) < viewW * 0.9) {
+          const len = Math.hypot(dx, dy) || 1;
+          e.x += dx / len * 62 * dt; e.y += dy / len * 62 * dt;
+          e.y = clamp(e.y, 60, VIEW_H - 140);
+        }
+        e.dir = dx < 0 ? -1 : 1;
+      }
+
+      const hb = { x: e.x + 8, y: e.y + 8, w: e.w - 16, h: e.h - 10 };
+      if (!overlap(p.x, p.y, P_W, P_H, hb)) continue;
+      const fromAbove = p.vy > 0 && prevBottom <= hb.y + 14;
+      if (fromAbove && d.stomp) {
+        killEnemy(e, false);
+        p.vy = keys.jump ? -720 : -520; p.bounce = true; p.squash = 1.2;
+      } else if (fromAbove && e.type === 'block') {   // 踩在方塊上只會彈開
+        p.vy = -560; p.bounce = true;
+      } else hurt(e.x + e.w / 2);
+    }
+
+    // ───── 魔法 ─────
+    p.magic = Math.max(0, p.magic - dt);
+    p.shootCd -= dt;
+    if (magicPressed && control) {
+      if (p.magic > 0 && p.shootCd <= 0) {
+        bolts.push({ x: pcx + p.face * 26, y: p.y + 30, vx: p.face * 600, t: 0 });
+        p.shootCd = 0.3;
+      } else if (p.magic <= 0) toast('先從 ❓ 方塊找到魔杖 🪄 才能發射魔法喔！', 2);
+    }
+    magicPressed = false;
+    for (const b of bolts) {
+      b.t += dt; b.x += b.vx * dt;
+      if (Math.random() < dt * 30) particles.push({ x: b.x, y: b.y + rand(-6, 6), vx: -b.vx * .1, vy: rand(-30, 30), t: 0, life: .3, star: true, magic: true });
+      for (const e of enemies) {
+        if (e.dead || b.t > 9) continue;
+        if (overlap(b.x - 10, b.y - 10, 20, 20, e)) { killEnemy(e, true); b.t = 9; }
+      }
+      if (platforms.some(pl => !pl.floating && overlap(b.x - 6, b.y - 6, 12, 12, pl))) b.t = 9;
+    }
+    bolts = bolts.filter(b => b.t < 0.9);
+
+    // ───── 彈簧、尖刺、存檔旗子 ─────
+    for (const sp of springs) {
+      sp.squash = Math.max(0, sp.squash - dt);
+      if (p.vy > 0 && prevBottom <= sp.y + 16 && p.y + P_H >= sp.y + 10 && p.x + P_W > sp.x + 6 && p.x < sp.x + sp.w - 6) {
+        p.y = sp.y + 10 - P_H; p.vy = -1300; p.bounce = true; p.onGround = false; p.squash = 1.3; sp.squash = .25;
+        puff(sp.x + sp.w / 2, sp.y + 10, 6);
       }
     }
+    for (const sk of spikes) {
+      if (overlap(p.x, p.y, P_W, P_H, { x: sk.x + 6, y: sk.y + sk.h * 0.5, w: sk.w - 12, h: sk.h * 0.5 })) {
+        if (p.blink <= 0) { hurt(sk.x + sk.w / 2); p.vy = -620; }
+      }
+    }
+    for (const f of flags) {
+      f.t += dt;
+      if (!f.on && Math.abs(pcx - f.x) < 34 && p.y + P_H > f.y - 100 && p.y < f.y) {
+        f.on = true; checkpoint = { x: f.x - P_W / 2, y: f.y };
+        if (p.hp < MAX_HP) { p.hp++; renderHearts(); }
+        toast('🚩 存檔點！跌倒會從這裡重新出發', 2);
+        for (let i = 0; i < 12; i++) particles.push({ x: f.x, y: f.y - 80, vx: rand(-160, 160), vy: rand(-260, -40), t: 0, life: .6, star: true });
+      }
+    }
+    for (const b of qblocks) b.bump = Math.max(0, b.bump - dt);
 
     // 大怪物出現
     if (boss) {
@@ -615,7 +916,8 @@
       if (boss.state === 'roar') {
         cam.shake = Math.max(cam.shake, boss.t < 1.4 ? 0.12 : 0);
         if (boss.t > 0.3 && boss.t < 1.4 && Math.random() < dt * 9) {
-          flames.push({ x: boss.x + boss.w * 0.08, y: boss.y + boss.h * 0.55 + rand(-12, 12), vx: rand(-360, -240), vy: rand(-30, 30), t: 0, life: .7, rot: rand(0, 6) });
+          if (boss.kind === 'octopus') flames.push({ ink: true, x: boss.x + boss.w * 0.3, y: boss.y + boss.h * 0.55 + rand(-14, 14), vx: rand(-380, -250), vy: rand(-80, 40), t: 0, life: .8, rot: 0, r: rand(8, 15) });
+          else flames.push({ x: boss.x + boss.w * 0.08, y: boss.y + boss.h * 0.55 + rand(-12, 12), vx: rand(-360, -240), vy: rand(-30, 30), t: 0, life: .7, rot: rand(0, 6) });
         }
         if (boss.t > 1.8 && state === 'boss-intro') {
           state = 'boss-wait';
@@ -638,9 +940,18 @@
     for (const c of items) {
       if (c.got) continue;
       c.t += dt;
+      if (c.baseY !== undefined) { c.rise = Math.min(1, c.rise + dt * 4); c.y = c.baseY + 30 * (1 - c.rise); }
       if (Math.abs(c.x - (p.x + P_W / 2)) < 34 && Math.abs(c.y - (p.y + P_H / 2)) < 46) {
         c.got = true;
-        if (c.kind === 'gem') { gemCount++; popups.push({ x: c.x, y: c.y, text: '+1', t: 0, small: true }); }
+        if (c.kind === 'heart') { drawTile(TILE.heart, c.x - 20, y - 20, 40); continue; }
+      if (c.kind === 'wand') {
+        ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(c.x, y); ctx.rotate(Math.sin(c.t * 3) * 0.3);
+        if (IMG.wand) ctx.drawImage(IMG.wand, -20, -20, 40, 40);
+        ctx.restore(); continue;
+      }
+      if (c.kind === 'gem') { gemCount++; popups.push({ x: c.x, y: c.y, text: '+1', t: 0, small: true }); }
+        else if (c.kind === 'heart') { p.hp = Math.min(MAX_HP, p.hp + 1); renderHearts(); popups.push({ x: c.x, y: c.y, text: '❤', t: 0 }); }
+        else if (c.kind === 'wand') { p.magic = MAGIC_TIME; toast('🪄 拿到魔杖！按 X 發射魔法，什麼怪物都打得倒', 2.6); }
         else { coinCount++; popups.push({ x: c.x, y: c.y, text: c.ch, t: 0 }); }
         for (let i = 0; i < 8; i++) particles.push({ x: c.x, y: c.y, vx: rand(-160, 160), vy: rand(-220, -40), t: 0, life: .5, star: true });
       }
@@ -734,6 +1045,24 @@
       }
       ctx.drawImage(a.canvas, p.x - a.pad, p.y - a.pad, p.w + a.pad * 2, p.h + a.pad * 2);
     }
+    // 裝飾、尖刺、彈簧、問號方塊、存檔旗子（Kenney 像素素材）
+    const vis = o => o.x < cam.x + viewW + 60 && o.x + (o.w || o.size) > cam.x - 60;
+    for (const d of decos) if (vis(d)) drawTile(d.tile, d.x, d.y, d.size, d.flip);
+    for (const sk of spikes) if (vis(sk)) for (let x = sk.x; x < sk.x + sk.w - 1; x += KS) drawTile(TILE.spikes, x, sk.y + 4, KS);
+    for (const sp of springs) if (vis(sp)) {
+      ctx.save(); ctx.translate(sp.x + sp.w / 2, sp.y + sp.h); ctx.scale(1 + sp.squash, 1 - sp.squash * 1.6);
+      drawTile(TILE.spring, -sp.w / 2, -sp.h, sp.w); ctx.restore();
+    }
+    for (const b of qblocks) if (vis(b)) {
+      const dy = -Math.sin(Math.min(1, b.bump / 0.18) * Math.PI) * 10;
+      drawTile(b.used ? TILE.used : TILE.qblock, b.x, b.y + dy, b.w);
+    }
+    for (const f of flags) if (vis({ x: f.x - 30, w: 60 })) {
+      ctx.save(); ctx.globalAlpha = f.on ? 1 : 0.75;
+      drawTile(TILE.pole, f.x - KS / 2, f.y - KS, KS);
+      drawTile(f.on && Math.floor(f.t * 4) % 2 ? TILE.flag2 : TILE.flag, f.x - KS / 2, f.y - KS * 2, KS);
+      ctx.restore();
+    }
 
     // 寶石 / 注音
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -759,16 +1088,45 @@
       ctx.restore();
     }
 
-    // 小怪物
-    for (const m of minions) {
-      if (m.x > cam.x + viewW + 40 || m.x + m.w < cam.x - 40) continue;
-      const squash = m.dead ? Math.max(0.15, 1 - m.dead * 4) : 1 + Math.sin(m.t * 10) * 0.05;
+    // 怪物
+    for (const e of enemies) {
+      if (e.x > cam.x + viewW + 60 || e.x + e.w < cam.x - 60) continue;
       ctx.save();
-      ctx.globalAlpha = m.dead ? Math.max(0, 1 - m.dead * 1.6) : 1;
-      ctx.translate(m.x + m.w / 2, m.y + m.h);
-      ctx.scale(m.dir > 0 ? -1 : 1, squash);      // 原圖面向左
-      if (IMG.minion) ctx.drawImage(IMG.minion, -m.w / 2 - 4, -m.h - 4, m.w + 8, m.h + 6);
-      else { ctx.fillStyle = '#6cc04a'; ctx.fillRect(-m.w / 2, -m.h, m.w, m.h); }
+      ctx.globalAlpha = e.dead ? Math.max(0, 1 - e.dead * 1.6) : 1;
+      const squash = e.dead ? Math.max(0.15, 1 - e.dead * 4) : 1;
+      ctx.translate(e.x + e.w / 2, e.y + e.h);
+      ctx.scale(1, squash);
+      const W = e.w, H = e.h;
+      ctx.imageSmoothingEnabled = e.type === 'minion';
+      if (e.type === 'minion') {
+        ctx.scale(e.dir > 0 ? -1 : 1, 1 + Math.sin(e.t * 10) * 0.05);      // 原圖面向左
+        if (IMG.minion) ctx.drawImage(IMG.minion, -W / 2 - 4, -H - 4, W + 8, H + 6);
+      } else if (e.type === 'slime') {
+        const air = e.vy < 0 ? 1.15 : e.vy > 0 ? 1.05 : 0.92 + Math.abs(Math.sin(e.t * 5)) * 0.06;
+        ctx.scale(1 / Math.sqrt(air), air);
+        if (IMG.slime) ctx.drawImage(IMG.slime, -W / 2, -H, W, H);
+      } else if (e.type === 'bat') {
+        drawChar(CHAR.bat[Math.floor(e.t * 9) % 3], -W / 2, -H, W, e.dir > 0);
+      } else if (e.type === 'spike') {
+        ctx.translate(0, -H / 2); ctx.rotate(e.rot);
+        drawChar(CHAR.spike, -W / 2, -H / 2, W);
+      } else if (e.type === 'block') {
+        drawChar(e.mode === 'wait' ? CHAR.blockCalm : CHAR.blockMad, -W / 2, -H, W);
+      } else if (e.type === 'ghost') {
+        ctx.globalAlpha *= e.shy ? 0.6 : 0.88;
+        ctx.translate(0, Math.sin(e.t * 2.5) * 4);
+        if (e.dir < 0) ctx.scale(-1, 1);
+        const img = e.shy ? IMG.ghostShy : IMG.ghost;
+        if (img) ctx.drawImage(img, -W / 2, -H, W, H);
+      }
+      ctx.restore();
+    }
+
+    // 魔法彈
+    for (const b of bolts) {
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.t * 14);
+      ctx.imageSmoothingEnabled = false;
+      if (IMG.wand) ctx.drawImage(IMG.wand, -14, -14, 28, 28);
       ctx.restore();
     }
 
@@ -787,7 +1145,8 @@
         ctx.beginPath(); ctx.ellipse(boss.x + boss.w * 0.62, boss.y + boss.h, boss.w * 0.4, 9, 0, 0, Math.PI * 2); ctx.fill();
         ctx.translate(boss.x + boss.w / 2, boss.y + boss.h + dy);
         ctx.rotate(rot); ctx.scale(s, s);
-        if (IMG.boss) ctx.drawImage(IMG.boss, -boss.w / 2, -boss.h, boss.w, boss.h);
+        ctx.imageSmoothingEnabled = boss.kind !== 'octopus';
+        if (boss.img) ctx.drawImage(boss.img, -boss.w / 2, -boss.h, boss.w, boss.h);
         ctx.restore();
       }
       if (boss.state === 'idle' && boss.x - cam.x < viewW + 40) {
@@ -799,7 +1158,8 @@
       const k = f.t / f.life;
       ctx.save(); ctx.globalAlpha = 1 - k; ctx.translate(f.x, f.y); ctx.rotate(f.rot);
       const s = 34 + k * 30;
-      if (IMG.fire) ctx.drawImage(IMG.fire, -s / 2, -s * 0.72, s, s * 1.45);
+      if (f.ink) { ctx.fillStyle = '#3b1a5a'; const r = Math.round(f.r * (1 + k)); ctx.fillRect(-r, -r, r * 2, r * 2); ctx.fillStyle = '#6c3aa0'; ctx.fillRect(-r + 3, -r + 3, r, r); }
+      else if (IMG.fire) ctx.drawImage(IMG.fire, -s / 2, -s * 0.72, s, s * 1.45);
       ctx.restore();
     }
 
@@ -808,7 +1168,7 @@
       const k = 1 - q.t / q.life;
       ctx.globalAlpha = k;
       if (q.gem) drawGem(q.x, q.y, 0.8, q.gem);
-      else if (q.star) { ctx.fillStyle = '#ffe680'; ctx.beginPath(); ctx.arc(q.x, q.y, 3.5 * k + 1, 0, Math.PI * 2); ctx.fill(); }
+      else if (q.star) { ctx.fillStyle = q.magic ? '#c792ea' : '#ffe680'; const r = Math.ceil(3.5 * k + 1.5); ctx.fillRect(q.x - r, q.y - r, r * 2, r * 2); }
       else { ctx.fillStyle = '#fffaf0'; ctx.beginPath(); ctx.arc(q.x, q.y, q.r * (0.6 + 0.6 * (1 - k)), 0, Math.PI * 2); ctx.fill(); }
     }
     ctx.globalAlpha = 1;
@@ -831,6 +1191,10 @@
     distEl.textContent = Math.floor(Math.max(0, bestX) / 50);
     gemEl.textContent = gemCount;
     coinEl.textContent = coinCount;
+    const m = Math.ceil(player.magic);
+    magicPill.classList.toggle('hidden', m <= 0);
+    magicBtn.hidden = m <= 0;
+    if (m > 0) magicT.textContent = m;
   }
 
   function drawPlayer() {
@@ -857,10 +1221,35 @@
     ctx.restore();
   }
 
+  // ───────── 開始畫面的怪物圖鑑 ─────────
+  function renderBestiary() {
+    const list = [
+      ['minion', '可以踩', 'ok'], ['slime', '可以踩，會跳', 'ok'], ['bat', '可以踩，會飛', 'ok'],
+      ['spike', '不能踩！跳過去', 'no'], ['block', '會砸下來！', 'no'], ['ghost', '看著牠就不動，只怕魔法', 'no'],
+    ];
+    const box = document.getElementById('bestiary');
+    box.innerHTML = '';
+    for (const [type, tip, cls] of list) {
+      const div = document.createElement('div'), c = document.createElement('canvas');
+      c.width = c.height = 48;
+      const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+      const sheet = (img, cols, cell, i) => g.drawImage(img, (i % cols) * cell, Math.floor(i / cols) * cell, cell, cell, 0, 0, 48, 48);
+      if (type === 'minion' && IMG.minion) { g.imageSmoothingEnabled = true; g.drawImage(IMG.minion, 0, 10, 48, 34); }
+      if (type === 'slime') g.drawImage(IMG.slime, 0, 8, 48, 36);
+      if (type === 'ghost') g.drawImage(IMG.ghost, 3, 3, 42, 42);
+      if (type === 'bat' && IMG.chars) sheet(IMG.chars, 9, 24, CHAR.bat[0]);
+      if (type === 'spike' && IMG.chars) sheet(IMG.chars, 9, 24, CHAR.spike);
+      if (type === 'block' && IMG.chars) sheet(IMG.chars, 9, 24, CHAR.blockMad);
+      div.append(c);
+      div.insertAdjacentHTML('beforeend', `<b>${ENEMY[type].name}</b><span class="${cls}">${tip}</span>`);
+      box.append(div);
+    }
+  }
+
   // ───────── 主迴圈 ─────────
   let last = performance.now(), acc = 0;
   const STEP = 1 / 120;
-  window.__game = { player, cam, keys, get platforms() { return platforms; }, get minions() { return minions; }, get boss() { return boss; },
+  window.__game = { player, cam, keys, get platforms() { return platforms; }, get minions() { return enemies; }, get enemies() { return enemies; }, get qblocks() { return qblocks; }, get springs() { return springs; }, get spikes() { return spikes; }, get flags() { return flags; }, get bolts() { return bolts; }, addEnemy, hitBlock, hurt, get checkpoint() { return checkpoint; }, press(k) { if (k === 'magic') magicPressed = true; }, get boss() { return boss; },
                     get state() { return state; }, tick(sec) { for (let i = 0; i < sec * 120; i++) step(STEP); draw(); } };   // 除錯用
   function frame(now) {
     acc += Math.min(0.1, (now - last) / 1000);
@@ -875,10 +1264,14 @@
   }
 
   Promise.all([load('assets/xiaojian_pixel.png'), load(BIOMES.grass.src), load(BIOMES.beach.src),
-               load('assets/boss.png'), load('assets/minion.png'), load('assets/fire.png')]).then(([pi, g, b, bo, mi, fi]) => {
-    IMG.player = pi; IMG.boss = cleanBoss(bo); IMG.minion = mi; IMG.fire = fi;
+               load('assets/boss.png'), load('assets/minion.png'), load('assets/fire.png'),
+               load('assets/kenney/tiles.png'), load('assets/kenney/chars.png')]).then(([pi, g, b, bo, mi, fi, kt, kc]) => {
+    IMG.player = pi; IMG.boss = cleanBoss(bo); IMG.minion = mi; IMG.fire = fi; IMG.tiles = kt; IMG.chars = kc;
+    IMG.slime = buildSprite(PIX.slime); IMG.ghost = buildSprite(PIX.ghost); IMG.ghostShy = buildSprite(PIX.ghostShy);
+    IMG.wand = buildSprite(PIX.wand); IMG.octo = buildOctopus();
+    renderBestiary();
     BIOMES.grass.img = g; BIOMES.beach.img = b;
-    resetWorld(); resetPlayer();
+    resetWorld(); resetPlayer(); renderHearts();
     generateUntil(viewW + 1200);
     requestAnimationFrame(frame);
   });

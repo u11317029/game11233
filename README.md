@@ -24,3 +24,17 @@
 ☝️ 只伸出食指：寫字　🖐️ 張開手掌停一下：送出　✊ 握拳停一下：擦掉
 
 手勢偵測使用 [MediaPipe Hand Landmarker](https://developers.google.com/mediapipe/solutions/vision/hand_landmarker)，需要相機與網路（第一次約下載 8MB 模型）。沒有相機也可以用滑鼠或觸控寫。
+
+## 冒險遊戲玩法
+- ❤️ 3 顆愛心：被怪物碰到或掉進坑會少一顆，用完從 🚩 存檔點重新出發（不會 Game Over）
+- ❓ 問號方塊：從下面頂，會掉出寶石、愛心或 🪄 魔杖
+- 🪄 魔杖：20 秒內按 `X`（平板按「魔」）發射魔法，什麼怪物都打得倒
+- 🍄 彈簧蘑菇：可以跳到高空獎勵台
+- 怪物：小綠怪、注音史萊姆、蝙蝠（可以踩）；刺刺球、生氣方塊（不能踩）；害羞幽靈（只怕魔法）
+- 大怪物：龍與墨水章魚輪流出現，每約 100 公尺一隻，用空中寫注音打敗
+
+## 素材來源
+- 像素素材：[Kenney – Pixel Platformer](https://kenney.nl/assets/pixel-platformer)（CC0，`assets/kenney/`）
+- 像素字型：[俐方體11號 Cubic 11](https://github.com/ACh-K/Cubic-11)（免費字型）
+- 注音史萊姆、害羞幽靈、墨水章魚、魔杖：程式內以像素陣列繪製（`game.html` 的 `PIX`、`buildOctopus`）
+- 小簡、龍、小綠怪、場景：作者原創插圖
