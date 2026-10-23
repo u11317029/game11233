@@ -61,18 +61,31 @@ window.Voice = (() => {
   // ───────── 播放 ─────────
   let audioEl = null, token = 0;
   function stop() { token++; try { speechSynthesis.cancel(); } catch (e) {} if (audioEl) { audioEl.pause(); audioEl = null; } }
+  // Chrome 剛載入時語音清單是空的，等一下下再念
+  const voicesReady = () => voices().length || !window.speechSynthesis ? Promise.resolve() : new Promise(res => {
+    const done = () => { speechSynthesis.removeEventListener('voiceschanged', done); res(); };
+    speechSynthesis.addEventListener('voiceschanged', done); setTimeout(done, 1000);
+  });
+  let badVoice = '';                                                // 這次開網頁念失敗過的語音（Chrome 的線上語音偶爾會沒聲音）
   function tts(text, rate) {
-    return new Promise(res => {
+    return voicesReady().then(() => new Promise(res => {
       try {
         const u = new SpeechSynthesisUtterance(text);
-        const v = currentVoice();
+        let v = currentVoice();
+        if (v && v.name === badVoice) v = voices().find(x => x.name !== badVoice && x.localService) || v;
         u.lang = v ? v.lang : 'zh-TW'; if (v) u.voice = v;
         u.rate = rate || pref.rate; u.pitch = 1.05;
-        u.onend = u.onerror = () => res();
-        speechSynthesis.speak(u);
-        setTimeout(res, 6000);
+        const t0 = performance.now();
+        u.onend = () => res();
+        u.onerror = e => {                                          // 沒念出來就換一個本機語音再試一次
+          if (v && !['interrupted', 'canceled'].includes(e.error) && v.name !== badVoice && performance.now() - t0 < 3000) { badVoice = v.name; tts(text, rate).then(res); }
+          else res();
+        };
+        if (speechSynthesis.paused) speechSynthesis.resume();           // Chrome 有時候會卡在暫停
+        setTimeout(() => speechSynthesis.speak(u), 60);                  // cancel 之後馬上 speak，Chrome 常常會吃掉
+        setTimeout(res, 7000);
       } catch (e) { res(); }
-    });
+    }));
   }
   async function playClip(k) {
     const blob = await getClip(k);

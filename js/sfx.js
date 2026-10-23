@@ -10,6 +10,7 @@ window.Sfx = (() => {
   try { muted = localStorage.getItem('zhuyin-sound') === 'off'; } catch (e) {}
 
   function ctx() {
+    if (ac && ac.state === 'closed') ac = null;                       // 被系統關掉了就重開一個
     if (!ac) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
@@ -21,12 +22,13 @@ window.Sfx = (() => {
       const d = noiseBuf.getChannelData(0);
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     }
-    if (ac.state === 'suspended') ac.resume();
+    if (ac.state !== 'running') ac.resume().catch(() => {});        // suspended／interrupted（切換分頁、耳機拔插後）都叫醒
     return ac;
   }
-  // 瀏覽器規定：要使用者先點一下才能出聲
+  // 瀏覽器規定：要使用者先點一下才能出聲（Chrome 也可能在切到別的分頁後把聲音暫停）
   const unlock = () => { ctx(); bgm._tryStart(); };
-  ['pointerdown', 'keydown', 'touchstart'].forEach(ev => addEventListener(ev, unlock, { capture: true, passive: true }));
+  ['pointerdown', 'pointerup', 'click', 'keydown', 'touchstart', 'touchend'].forEach(ev => addEventListener(ev, unlock, { capture: true, passive: true }));
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && ac && ac.state !== 'running') ac.resume().catch(() => {}); });
 
   // 一個音：波形、起始/結束頻率、長度、音量、延遲
   function tone({ type = 'square', f = 440, f2 = null, dur = 0.12, vol = 0.5, at = 0, vib = 0 }) {
