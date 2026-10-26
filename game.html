@@ -272,6 +272,7 @@
 </div>
 
 <script src="js/sfx.js"></script>
+<script src="js/pixel-art.js"></script>
 <script>
 (() => {
   // ───────── 基本設定 ─────────
@@ -287,16 +288,16 @@
   // ───────── 關卡 ─────────
   // enemies：[種類, 出現比重]；symbols：大怪物對決會考的注音（空字串 = 全部）
   const LEVELS = [
-    { id: 1, name: '草原小路', desc: '新手村：踩小怪物、頂問號方塊', biome: 'grass', length: 3800, boss: 'dragon',
-      enemies: [['minion', 1], ['slime', .7]], symbols: 'ㄅㄆㄇㄈㄉㄊㄋㄌ', units: '單元 1–2' },
-    { id: 2, name: '海邊沙灘', desc: '終點的章魚大王用觸手抓著注音！聽聲音，跳到正確的觸手上', biome: 'beach', length: 4600, boss: 'octopus', challenge: 'octo', spikes: true, springs: true,
-      enemies: [['minion', .7], ['slime', .8], ['bat', 1]], symbols: 'ㄍㄎㄏㄐㄑㄒ', units: '單元 3–4' },
+    { id: 1, name: '草原小路', desc: '新手村：路上有注音門，終點用手指在空中寫注音打敗噴火龍', biome: 'grass', length: 3800, boss: 'dragon',
+      enemies: [['minion', 1]], symbols: 'ㄅㄆㄇㄈㄉㄊㄋㄌ', units: '單元 1–2' },
+    { id: 2, name: '海邊沙灘', desc: '章魚把注音藏進貝殼裡！翻貝殼，找出注音和它的圖', biome: 'beach', length: 4600, boss: 'octopus', challenge: 'shell', springs: true,
+      enemies: [['minion', .8], ['slime', .8], ['bat', .4]], symbols: 'ㄍㄎㄏㄐㄑㄒ', units: '單元 3–4' },
     { id: 3, name: '蘑菇森林', desc: '終點的蜜蜂女王會把小簡抓走！聽聲音打下正確注音的蜜蜂', biome: 'forest', length: 5200, boss: 'queen', challenge: 'listen', spikes: true, springs: true,
-      enemies: [['slime', .8], ['bat', .8], ['spike', .9], ['block', .8]], symbols: 'ㄓㄔㄕㄖㄗㄘㄙ', units: '單元 5–6' },
+      enemies: [['slime', .8], ['bat', .6], ['spike', .5]], symbols: 'ㄓㄔㄕㄖㄗㄘㄙ', units: '單元 5–6' },
     { id: 4, name: '冰雪山谷', desc: '害羞幽靈只怕魔法！終點的雪怪把河結成冰塊，照拼音順序踩冰塊過河', biome: 'snow', length: 5800, boss: 'yeti', challenge: 'ice', spikes: true, springs: true,
-      enemies: [['bat', 1], ['spike', .7], ['block', .5], ['ghost', 1]], symbols: 'ㄧㄨㄩㄅㄉㄍㄐㄓㄗ', units: '單元 7＋複習' },
-    { id: 5, name: '火山城堡', desc: '大魔王的城堡：先聽音打蜜蜂女王，再用空中寫字打敗噴火龍！', biome: 'volcano', length: 6600, boss: 'queen', challenge: 'combo', spikes: true, springs: true,
-      enemies: [['minion', .5], ['slime', .8], ['bat', 1], ['spike', .9], ['block', .8], ['ghost', .9]], symbols: '', units: '全部複習' },
+      enemies: [['slime', .6], ['bat', .6], ['ghost', .6]], symbols: 'ㄧㄨㄩㄅㄉㄍㄐㄓㄗ', units: '單元 7＋複習' },
+    { id: 5, name: '火山城堡', desc: '熔岩魔王丟出寫著字的火球！聽聲音，用正確的聲調砲台打掉它', biome: 'volcano', length: 6600, boss: 'lava', challenge: 'tone', spikes: true, springs: true,
+      enemies: [['slime', .7], ['bat', .6], ['spike', .5], ['block', .4], ['ghost', .4]], symbols: '', units: '全部複習' },
     { id: 6, name: '無盡冒險', desc: '五個場景輪流出現，大怪物一隻接一隻', biome: 'alt', length: BOSS_AT, endless: true, spikes: true, springs: true, symbols: '', units: '全部' },
   ];
   let level = LEVELS[0];
@@ -534,6 +535,25 @@
     }, true);
   }
 
+  // 熔岩魔王（第 5 關）：黑色岩石身體、身上有發光的岩漿裂縫、頭上有角（40×40 像素）
+  function buildLava() {
+    const S = 40;
+    return pixelCanvas(S, S, (x, y) => {
+      for (const hx of [11, 28]) if (Math.abs(x - hx) <= (y - 1) / 3 && y >= 1 && y <= 8) return y < 3 ? '#ffcf3f' : '#e8501a';     // 角
+      const d = ((x - 20) / 16) ** 2 + ((y - 22) / 16) ** 2;
+      if (d > 1) {
+        for (const [ax] of [[4], [36]]) if (((x - ax) / 4) ** 2 + ((y - 27) / 8) ** 2 <= 1) return y > 32 ? '#ff7a1a' : '#4a3438';   // 手臂
+        return null;
+      }
+      if ((y === 15 || y === 16) && ((x >= 13 && x <= 16) || (x >= 23 && x <= 26))) return y === 15 && (x === 14 || x === 24) ? '#ffffff' : '#ffcf3f';   // 發光的眼睛
+      if (y === 12 && ((x >= 12 && x <= 16) || (x >= 23 && x <= 27))) return '#1a0e10';                                                 // 眉毛
+      if (y >= 22 && y <= 24 && x >= 15 && x <= 24) return y === 22 && x % 3 === 0 ? '#ffffff' : '#ff7a1a';                         // 嘴巴（岩漿＋牙）
+      const crack = (x * 3 + y * 7) % 23 === 0 || ((x + y * 2) % 17 === 0 && y > 26);                                              // 岩漿裂縫
+      if (crack) return '#ff8a3a';
+      return x > 28 || y > 32 ? '#33222a' : (x < 12 && y < 18) ? '#6b5054' : '#4a3438';
+    }, true);
+  }
+
   // ───────── 亂數 ─────────
   const rand = (a, b) => a + Math.random() * (b - a);
   const randi = (a, b) => Math.floor(rand(a, b + 1));
@@ -712,8 +732,9 @@
 
   function resetWorld() {
     platforms = []; items = []; enemies = []; particles = []; popups = []; flames = [];
-    qblocks = []; springs = []; spikes = []; decos = []; flags = []; bolts = [];
-    gen = { x: 900, y: 420, zhuyinFrom: Infinity, nextBossAt: level.length, bossCount: 0, nextFlagAt: Math.min(1800, level.length * 0.45) };
+    qblocks = []; springs = []; spikes = []; decos = []; flags = []; bolts = []; quizzes = [];
+    gen = { x: 900, y: 420, zhuyinFrom: Infinity, nextBossAt: level.length, bossCount: 0, nextFlagAt: Math.min(1800, level.length * 0.45),
+            quizAt: level.endless ? [2600] : [level.length * 0.3, level.length * 0.64], quizUsed: [] };   // 中途的注音門
     const start = addPlatform(-400, 420, 1300, false);       // 起點平地
     decorate(start);
     decos.push({ tile: TILE.sign, x: 170, y: 420 - KS + 4, size: KS });
@@ -728,8 +749,8 @@
     const ay = clamp(gen.y, 380, 440);
     const arena = addPlatform(gen.x, ay, 1150, false);
     const kind = level.endless ? (gen.bossCount % 2 === 0 ? 'dragon' : 'octopus') : level.boss;
-    const h = kind === 'queen' ? 144 : kind === 'yeti' ? 210 : 230, w = kind === 'dragon' ? h * 447 / 520 : kind === 'queen' ? 170 : h;
-    boss = { kind, img: { dragon: IMG.boss, queen: IMG.queen[0], yeti: IMG.yeti }[kind] || IMG.octo, x: arena.x + 760, y: ay - h - (kind === 'queen' ? 170 : 0), w, h, state: 'idle', t: 0, hit: 0,
+    const h = kind === 'queen' ? 144 : kind === 'yeti' || kind === 'lava' ? 210 : 230, w = kind === 'dragon' ? h * 447 / 520 : kind === 'queen' ? 170 : h;
+    boss = { kind, img: { dragon: IMG.boss, queen: IMG.queen[0], yeti: IMG.yeti, lava: IMG.lava }[kind] || IMG.octo, x: arena.x + 760, y: ay - h - (kind === 'queen' ? 170 : 0), w, h, state: 'idle', t: 0, hit: 0,
              arena: { x: arena.x, y: ay } };
     flags.push({ x: arena.x + 160, y: ay, on: false, t: 0 });     // 打怪前存檔
     gen.x = arena.x + arena.w;
@@ -743,6 +764,7 @@
   // 依跳躍能力（最高約 160、最遠約 220）設計，確保每一段都跳得過去
   function generateUntil(limitX) {
     while (gen.x < limitX) {
+      if (gen.quizAt.length && gen.x >= gen.quizAt[0] && gen.x < gen.nextBossAt - 600) { placeQuiz(); continue; }
       if (gen.x >= gen.nextBossAt && (!boss || boss.state === 'defeated')) { placeBoss(); continue; }
       const roll = Math.random();
       let gap = 0;
@@ -754,7 +776,7 @@
         addPlatform(fx, fy, fw, true);
         addItemRow(fx + fw / 2 - 19, fy - 50, 2);
         gen.lastFloatY = fy;
-        if (fx > 1300 && chance(.35) && (level.endless || level.enemies.some(([t]) => t === 'bat'))) {   // 坑洞上空有蝙蝠
+        if (fx > 1300 && chance(.2) && (level.endless || level.enemies.some(([t]) => t === 'bat'))) {   // 坑洞上空有蝙蝠
           const e = addEnemy('bat', { x: fx - 60, y: fy + 40, w: fw + 120 });
           e.baseY = fy - 150;
         }
@@ -781,11 +803,11 @@
         flags.push({ x: gx + gw / 2, y: ny, on: false, t: 0 });
         gen.nextFlagAt = gx + 1700;
         busy = true;
-      } else if (gx > 1300 && chance(.6)) {
+      } else if (gx > 1300 && chance(level.endless ? .55 : .36)) {      // 怪物少一點，小朋友比較不會卡關
         const t = pickEnemy(seg, meters, afterBoss);
         if (t) { addEnemy(t, seg); busy = true; }
       }
-      if (!busy && level.spikes && meters > (level.endless ? 35 : 15) && gw > 400 && chance(.25)) {   // 尖刺陷阱：放在中間，兩邊留路
+      if (!busy && level.spikes && meters > (level.endless ? 35 : 15) && gw > 400 && chance(.14)) {   // 尖刺陷阱：放在中間，兩邊留路
         const n = randi(1, 2);
         spikes.push({ x: gx + gw / 2 - n * KS / 2, y: ny - KS, w: n * KS, h: KS });
       }
@@ -836,6 +858,7 @@
     platforms = platforms.filter(p => p.x + p.w > cut);
     items = items.filter(c => !c.got && c.x > cut);
     enemies = enemies.filter(m => (m.x > cut || m.type === 'bat') && m.dead < 0.6 && (m.type !== 'bat' || m.baseX > cut));
+    quizzes = quizzes.filter(q => q.gateX + 60 > cut);
     for (const k of ['qblocks', 'springs', 'spikes', 'decos', 'flags']) {
       const arr = { qblocks, springs, spikes, decos, flags }[k].filter(o => o.x + (o.w || o.size || 60) > cut);
       if (k === 'qblocks') qblocks = arr; else if (k === 'springs') springs = arr; else if (k === 'spikes') spikes = arr; else if (k === 'decos') decos = arr; else flags = arr;
@@ -858,7 +881,9 @@
     const k = KEYMAP[e.code];
     if (state === 'start') { mapKey(e); return; }
     if (state === 'bees') { if (BEE.phase === 'play') beeKey(e); e.preventDefault(); return; }
-    if (state === 'octo') { if (OCTO.phase === 'play') octoKey(e); e.preventDefault(); return; }
+    if (state === 'shell') { if (SHELL.phase === 'play') shellKey(e); e.preventDefault(); return; }
+    if (state === 'tone') { if (TONE.phase === 'play') toneKey(e); e.preventDefault(); return; }
+    if (state === 'play' && e.code === 'KeyR') { const qz = quizzes.find(q => q.state === 'ask'); if (qz) sayQuiz(qz); return; }
     if (state === 'ice') { if (ICE.phase === 'play') iceKey(e); e.preventDefault(); return; }
     if (state === 'clear') { if (e.code === 'Enter') { e.preventDefault(); document.getElementById(document.getElementById('nextBtn').hidden ? 'againBtn' : 'nextBtn').click(); } return; }
     if (state === 'boss-wait' && e.code === 'Enter') { startChallenge(); return; }
@@ -1039,7 +1064,7 @@
     window.Sfx && Sfx.play('start');
     window.Sfx && Sfx.bgm.play('assets/audio/bgm-jungle-prince.m4a'); window.Sfx && Sfx.bgm.duck(false);
     document.getElementById('progress').classList.toggle('hidden', !!level.endless);
-    document.getElementById('progGoal').textContent = level.challenge === 'combo' ? '🐉' : { octopus: '🐙', queen: '🐝', yeti: '☃️' }[level.boss] || '🐉';
+    document.getElementById('progGoal').textContent = { octopus: '🐙', queen: '🐝', yeti: '☃️', lava: '🌋' }[level.boss] || '🐉';
     beeHud().classList.add('hidden'); document.body.classList.remove('bees-mode');
   }
   function startGame() {           // 按 Enter：開始下一個還沒過的關卡
@@ -1065,7 +1090,7 @@
     clearScreen.classList.remove('hidden');
   }
   document.getElementById('againBtn').addEventListener('click', () => startLevel(level.id));
-  document.getElementById('beeSay').addEventListener('click', () => (state === 'octo' ? sayOcto : state === 'ice' ? sayIce : sayTarget)());
+  document.getElementById('beeSay').addEventListener('click', () => (state === 'shell' ? () => {} : state === 'tone' ? sayTone : state === 'ice' ? sayIce : sayTarget)());
   document.getElementById('mapBtn').addEventListener('click', () => showLevelSelect(true));
   document.getElementById('nextBtn').addEventListener('click', () => startLevel(level.id + 1));
   document.getElementById('lvlBtn').addEventListener('click', () => {
@@ -1141,6 +1166,7 @@
   function hitBlock(b) {
     b.bump = 0.18;
     window.Sfx && Sfx.play('bump');
+    if (b.quiz) return quizHit(b);
     if (b.used) return;
     b.used = true;
     const cx = b.x + b.w / 2;
@@ -1196,6 +1222,7 @@
     document.getElementById('progress').classList.add('hidden');
     document.body.classList.add('bees-mode');
     beeHud().classList.remove('hidden'); document.getElementById('beeTip').textContent = tip;
+    document.getElementById('beeSay').hidden = state === 'shell';
   }
   function closeMiniHud() { beeHud().classList.add('hidden'); document.body.classList.remove('bees-mode'); }
   // 聽音題：從這一關的注音裡挑一個還沒考過的
@@ -1221,7 +1248,7 @@
     toast('糟糕！蜜蜂女王把小簡抓走了！', 2.4);
   }
   function startBeeGame() {
-    state = 'bees'; BEE.phase = 'play'; BEE.t = 0; BEE.hp = level.challenge === 'combo' ? 2 : 3; BEE.used = []; BEE.mistakes = 0; BEE.shots = [];
+    state = 'bees'; BEE.phase = 'play'; BEE.t = 0; BEE.hp = 3; BEE.used = []; BEE.mistakes = 0; BEE.shots = [];
     particles = []; popups = [];
     openMiniHud('點蜜蜂（或用 ←→ 選、X 發射）打下正確的注音'); beeHearts();
     nextBeeRound();
@@ -1261,24 +1288,11 @@
   }
   function beeWin() {
     BEE.phase = 'win'; BEE.t = 0;
-    const combo = level.challenge === 'combo';
-    if (!combo) saveGameRecord(1);
-    beeMsg(combo ? '蜜蜂女王逃走了！小簡掉回城堡……' : '打敗蜜蜂女王了！小簡自由了！', 'ok');
-    window.Sfx && Sfx.play(combo ? 'correct' : 'fanfare');
+    saveGameRecord(1);
+    beeMsg('打敗蜜蜂女王了！小簡自由了！', 'ok');
+    window.Sfx && Sfx.play('fanfare');
     for (let i = 0; i < 30; i++) particles.push({ x: viewW / 2, y: 100, vx: rand(-320, 320), vy: rand(-380, 40), t: 0, life: .9, star: true });
-    setTimeout(() => { if (state !== 'bees') return; closeMiniHud(); combo ? startComboDragon() : levelClear(); }, 2400);
-  }
-  // 第 5 關第二階段：小簡回到城堡競技場，噴火龍大魔王出現，改用空中寫字對決
-  function startComboDragon() {
-    const a = boss.arena, h = 230;
-    boss = { kind: 'dragon', img: IMG.boss, x: a.x + 760, y: a.y - h, w: h * 447 / 520, h, state: 'idle', t: 0, hit: 0, arena: a };
-    Object.assign(player, { x: a.x + 300, y: a.y - P_H - 60, vx: 0, vy: 0, onGround: false, face: 1, blink: 0, ground: null });
-    particles = []; popups = [];
-    state = 'play';
-    document.getElementById('progress').classList.remove('hidden');
-    document.getElementById('progGoal').textContent = '🐉';
-    window.Sfx && Sfx.bgm.duck(false);
-    toast('小心！噴火龍大魔王出現了！往前走去挑戰牠！', 3);
+    setTimeout(() => { if (state !== 'bees') return; closeMiniHud(); levelClear(); }, 2400);
   }
   function beeKey(e) {
     const alive = BEE.swarm.filter(b => !b.hit && !b.gone);
@@ -1451,151 +1465,287 @@
   }
   const tapXY = e => [e.clientX / innerWidth * viewW, e.clientY / innerHeight * VIEW_H];
 
-  // ───────── 第 2 關：章魚大王的觸手各抓著一個注音，聽聲音、跳到正確的觸手上 ─────────
-  const OCTO = { phase: '', t: 0, hp: 3, arms: [], target: '', used: [], sel: 0, locked: false, hurt: 0, kid: { x: 0, y: 0, face: 1 } };
-  const OCTO_SEA = 205, OCTO_WATER = 432, OCTO_ROCK = 400;          // 遠方海面、近處水面、小簡站的岩石
-  const octoHome = () => [Math.max(70, viewW * 0.1), OCTO_ROCK];
-  function sayOcto() { window.Voice && window.ZHUYIN_INDEX && Voice.speakSymbol(ZHUYIN_INDEX[OCTO.target], { rate: 0.8 }); }
-  function armTip(a) {                                              // 觸手抓著的注音牌中心
-    const sink = (1 - a.rise) * 300 + a.gone * 420;
-    return [a.x + Math.sin(OCTO.t * 1.3 + a.ph) * 10 + (a.wrong > 0 ? Math.sin(OCTO.t * 60) * 6 : 0), a.tipY + Math.sin(OCTO.t * 2 + a.ph) * 6 + sink];
+  // ───────── 第 2 關：章魚把注音藏進貝殼裡，翻兩個貝殼，找出「注音」和「它的圖」 ─────────
+  const SHELL = { phase: '', t: 0, hp: 4, cards: [], open: [], sel: 0, locked: false, hurt: 0, flips: 0 };
+  const SHELL_SEA = 180;
+  const pxEmoji = (e, n = 24) => window.PixelArt ? PixelArt.canvas(e, n) : null;
+  function sayCard(c) {
+    if (!window.Voice || !window.ZHUYIN_INDEX) return;
+    const s = ZHUYIN_INDEX[c.ch];
+    if (c.pic) Voice.speak(s.word, 0.85); else Voice.speakSymbol(s, { word: false, rate: 0.8 });
   }
-  const armTop = a => { const [x, y] = armTip(a); return [x, y - 26]; };
-
-  function startOctoGame() {
-    state = 'octo'; Object.assign(OCTO, { phase: 'play', t: 0, hp: 3, used: [], arms: [], hurt: 0, locked: true });
-    miniTimers = []; particles = []; popups = [];
-    const [hx, hy] = octoHome();
-    Object.assign(OCTO.kid, { x: hx, y: hy, face: 1, hop: null, on: null });
-    openMiniHud('點觸手（或用 ←→ 選、空白鍵跳）跳到正確的注音上'); hudHp('🐙', OCTO.hp);
-    beeMsg('章魚大王的觸手抓著注音冒出來了！');
-    toast('章魚大王用觸手抓住了注音！', 2.4);
-    after(.9, nextOctoRound);
+  function shellLayout() {                                         // 2 排 × 4 個貝殼，排在沙灘上
+    const n = SHELL.cards.length, cols = Math.ceil(n / 2), gapX = Math.min(170, (viewW - 160) / cols);
+    SHELL.cards.forEach((c, i) => { c.x = viewW / 2 + (i % cols - (cols - 1) / 2) * gapX; c.y = 262 + Math.floor(i / cols) * 100; });
   }
-  function nextOctoRound() {
-    OCTO.target = pickTarget(OCTO.used);
-    const opts = pickOptions(OCTO.target, 4, level.symbols || LISTEN_ALL, LISTEN_ALL);
-    const [hx] = octoHome(), left = hx + 180, right = viewW - 70, n = opts.length;
-    OCTO.arms = opts.map((ch, i) => ({ ch, x: left + (right - left) * i / (n - 1), tipY: 292 + [0, 40, 12, 46][i], ph: rand(0, 6),
-                                       age: 0, delay: i * .12, rise: 0, gone: 0, wrong: 0, ok: false }));
-    OCTO.sel = 0; OCTO.locked = false;
-    window.Sfx && Sfx.play('spring');
-    beeMsg('🔊 仔細聽，要跳到哪一隻觸手上？');
-    after(.7, sayOcto);
+  function startShellGame() {
+    state = 'shell'; miniTimers = []; particles = []; popups = [];
+    const pool = [...(level.symbols || LISTEN_ALL)].sort(() => Math.random() - .5).slice(0, 4);
+    const cards = [];
+    pool.forEach(ch => { cards.push({ ch, pic: false }); cards.push({ ch, pic: true }); });
+    Object.assign(SHELL, { phase: 'play', t: 0, hp: pool.length, cards: cards.sort(() => Math.random() - .5).map(c => ({ ...c, flip: 0, up: false, done: false, wrong: 0 })),
+                           open: [], sel: 0, locked: false, hurt: 0, flips: 0 });
+    shellLayout();
+    openMiniHud('點貝殼翻開（或用 ←→ 選、空白鍵翻）：找出注音和它的圖，兩個一組'); hudHp('🐙', SHELL.hp);
+    beeMsg('章魚把注音藏進貝殼裡了！翻兩個貝殼，找出一樣的聲音！');
+    toast('翻貝殼配對：注音 ＋ 它的圖', 2.6);
   }
-  function octoJump(a) {
-    if (OCTO.phase !== 'play' || OCTO.locked || !a || a.gone || a.rise < 1) return;
-    OCTO.locked = true;
-    window.Sfx && Sfx.play('jump');
-    hop(OCTO.kid, () => armTop(a), .6, 130, () => octoLand(a));
-  }
-  function octoLand(a) {
-    const kid = OCTO.kid, [x, y] = armTip(a);
-    kid.on = () => armTop(a);
-    if (a.ch === OCTO.target) {
-      a.ok = true; OCTO.hp--; hudHp('🐙', OCTO.hp); OCTO.hurt = .7;
-      flash = { t: .25, color: '255,255,255' }; cam.shake = .25;
-      popups.push({ x, y: y - 120, text: `答對了！${a.ch}`, t: 0 });
-      for (let i = 0; i < 18; i++) particles.push({ x, y: y - 20, vx: rand(-260, 260), vy: rand(-320, 40), t: 0, life: .7, star: true });
-      window.Sfx && Sfx.play('correct'); window.Sfx && Sfx.play('stomp');
-      beeMsg(`答對了！就是「${a.ch}」！章魚大王痛得縮起來了！`, 'ok');
-      after(.7, () => hop(kid, octoHome, .6, 110, () => window.Sfx && Sfx.play('land')));
-      after(1.2, () => OCTO.arms.forEach(b => b.gone = b.gone || 0.001));      // 觸手縮回海裡
-      after(1.8, () => OCTO.hp > 0 ? nextOctoRound() : octoWin());
-    } else {
-      a.wrong = .5; hitsTaken++;
-      window.Sfx && Sfx.play('wrong');
-      beeMsg(`不是「${a.ch}」喔！觸手把小簡甩下去了，再聽一次！`, 'bad');
-      after(.5, () => {                                              // 被甩進海裡，游回岩石
-        const fx = kid.x - 60, [hx] = octoHome();
-        a.gone = 0.001;
-        window.Sfx && Sfx.play('hurt');
-        hop(kid, () => [fx, OCTO_WATER + 50], .5, 70, () => {
-          splash(fx, OCTO_WATER);
-          hop(kid, () => [hx + 50, OCTO_WATER + 50], 1, 0, () =>
-            hop(kid, octoHome, .4, 70, () => { OCTO.locked = false; OCTO.sel = 0; sayOcto(); }));
-        });
+  function flipShell(c) {
+    if (SHELL.phase !== 'play' || SHELL.locked || !c || c.up || c.done) return;
+    c.up = true; SHELL.open.push(c); SHELL.flips++;
+    window.Sfx && Sfx.play('pop');
+    sayCard(c);
+    if (SHELL.open.length < 2) return;
+    const [a, b] = SHELL.open;
+    SHELL.locked = true;
+    if (a.ch === b.ch && a.pic !== b.pic) {                        // 配對成功
+      after(.9, () => {
+        a.done = b.done = true; SHELL.open = []; SHELL.locked = false;
+        SHELL.hp--; hudHp('🐙', SHELL.hp); SHELL.hurt = .7;
+        flash = { t: .25, color: '255,255,255' }; cam.shake = .2;
+        const s = ZHUYIN_INDEX[a.ch];
+        popups.push({ x: (a.x + b.x) / 2, y: Math.min(a.y, b.y) - 60, text: `${a.ch} ${s.word}`, t: 0 });
+        for (const c2 of [a, b]) for (let i = 0; i < 10; i++) particles.push({ x: c2.x, y: c2.y, vx: rand(-200, 200), vy: rand(-300, -40), t: 0, life: .7, star: true });
+        window.Sfx && Sfx.play('correct');
+        Voice.speakSymbol(s);
+        beeMsg(`配對成功！「${a.ch}」就是「${s.word}」的${s.word[s.at]}！`, 'ok');
+        if (SHELL.hp <= 0) after(1.4, shellWin);
       });
+    } else {                                                        // 不一樣：看一下再蓋回去（不算錯，記憶遊戲本來就要多翻幾次）
+      after(.5, () => { a.wrong = b.wrong = .5; window.Sfx && Sfx.play('wrong'); beeMsg('不是一組喔，記住它們的位置！', 'bad'); });
+      after(1.6, () => { a.up = b.up = false; SHELL.open = []; SHELL.locked = false; });
     }
   }
-  function octoWin() {
-    OCTO.phase = 'win'; OCTO.t = 0;
+  function shellWin() {
+    SHELL.phase = 'win'; SHELL.t = 0;
     saveGameRecord(1);
-    beeMsg('打敗章魚大王了！牠沉回海底去了！', 'ok');
+    beeMsg('全部找到了！章魚大王認輸，游回大海去了！', 'ok');
     window.Sfx && Sfx.play('zap');
     for (let i = 0; i < 30; i++) particles.push({ x: viewW * .6, y: 140, vx: rand(-320, 320), vy: rand(-380, 40), t: 0, life: .9, star: true });
     after(2.4, () => { closeMiniHud(); levelClear(); });
   }
-  function octoKey(e) {
-    const alive = OCTO.arms.filter(a => !a.gone);
-    if (e.code === 'KeyR') return sayOcto();
-    if (!alive.length) return;
-    if (e.code === 'ArrowRight') { OCTO.sel = (OCTO.sel + 1) % alive.length; window.Sfx && Sfx.play('click'); }
-    else if (e.code === 'ArrowLeft') { OCTO.sel = (OCTO.sel - 1 + alive.length) % alive.length; window.Sfx && Sfx.play('click'); }
-    else if (['Space', 'Enter', 'ArrowUp', 'KeyX', 'KeyK'].includes(e.code)) octoJump(alive[OCTO.sel % alive.length]);
+  function shellKey(e) {
+    const n = SHELL.cards.length, cols = Math.ceil(n / 2);
+    if (e.code === 'ArrowRight') SHELL.sel = (SHELL.sel + 1) % n;
+    else if (e.code === 'ArrowLeft') SHELL.sel = (SHELL.sel - 1 + n) % n;
+    else if (e.code === 'ArrowDown' || e.code === 'ArrowUp') SHELL.sel = (SHELL.sel + cols) % n;
+    else if (['Space', 'Enter', 'KeyX', 'KeyK'].includes(e.code)) return flipShell(SHELL.cards[SHELL.sel]);
+    else return;
+    window.Sfx && Sfx.play('click');
   }
-  function octoStep(dt) {
-    OCTO.t += dt; OCTO.hurt = Math.max(0, OCTO.hurt - dt);
-    for (const a of OCTO.arms) {
-      a.age += dt; a.rise = clamp((a.age - a.delay) / .5, 0, 1);
-      if (a.gone) a.gone += dt;
-      if (a.wrong > 0) a.wrong -= dt;
-    }
-    hopStep(OCTO.kid, dt);
+  function shellStep(dt) {
+    SHELL.t += dt; SHELL.hurt = Math.max(0, SHELL.hurt - dt);
+    for (const c of SHELL.cards) { c.flip += ((c.up || c.done ? 1 : 0) - c.flip) * Math.min(1, dt * 12); if (c.wrong > 0) c.wrong -= dt; }
     miniTick(dt);
   }
-  function drawArm(a, selected) {
-    const [tx, ty] = armTip(a), bx = a.x, by = OCTO_WATER + 90, seg = 12, topY = ty + 18;
-    const n = Math.max(1, Math.ceil((by - topY) / seg));
-    const at = f => [bx + (tx - bx) * f + Math.sin(f * 5 + OCTO.t * 2 + a.ph) * 12 * (1 - f), by - (by - topY) * f, 32 - f * 14];
-    for (const [col, grow] of [['#3b1a5a', 4], [a.ok ? '#c792ea' : '#9b59d0', 0]]) {        // 先畫深色外框再畫身體
-      ctx.fillStyle = col;
-      for (let k = 0; k <= n; k++) { const [x, y, w] = at(k / n); ctx.fillRect(Math.round(x - w / 2 - grow), Math.round(y - grow), Math.round(w + grow * 2), seg + grow * 2); }
+  function drawShellCard(c, selected) {
+    const W = 120, H = 88, k = Math.cos(c.flip * Math.PI), sx = Math.abs(k), front = k < 0;   // front = 已翻開
+    const shake = c.wrong > 0 ? Math.sin(SHELL.t * 60) * 4 : 0;
+    ctx.save(); ctx.translate(c.x + shake, c.y + (c.done ? Math.sin(SHELL.t * 3 + c.x) * 3 : 0)); ctx.scale(Math.max(.04, sx), 1);
+    ctx.fillStyle = 'rgba(80,50,20,.25)'; ctx.fillRect(-W / 2 + 6, H / 2 - 4, W, 10);
+    if (!front) {                                                  // 貝殼背面：像素扇貝
+      ctx.fillStyle = selected ? '#f08a3c' : '#3b2414'; ctx.fillRect(-W / 2 - 4, -H / 2 - 4, W + 8, H + 8);
+      ctx.fillStyle = '#ffb3c7'; ctx.fillRect(-W / 2, -H / 2, W, H);
+      ctx.fillStyle = '#ff8fa3'; for (let i = 0; i < 5; i++) ctx.fillRect(-W / 2 + 8 + i * 22, -H / 2 + 10, 12, H - 30);
+      ctx.fillStyle = '#ffe0e8'; ctx.fillRect(-W / 2 + 6, -H / 2 + 6, W - 12, 6);
+      ctx.fillStyle = '#e8708a'; ctx.fillRect(-18, H / 2 - 18, 36, 12);
+    } else {
+      ctx.fillStyle = selected ? '#f08a3c' : c.done ? '#2e9d4a' : '#3b2414'; ctx.fillRect(-W / 2 - 4, -H / 2 - 4, W + 8, H + 8);
+      ctx.fillStyle = c.wrong > 0 ? '#ffd6d6' : c.done ? '#e2fbd9' : '#fffaeb'; ctx.fillRect(-W / 2, -H / 2, W, H);
+      const s = ZHUYIN_INDEX[c.ch];
+      if (c.pic) { const img = pxEmoji(s.emoji, 24); ctx.imageSmoothingEnabled = false; if (img) ctx.drawImage(img, -32, -38, 64, 64);
+                   ctx.fillStyle = '#7a6450'; ctx.font = '18px "PingFang TC","Noto Sans TC",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s.word, 0, 34); }
+      else { ctx.fillStyle = s.unit.color; ctx.font = '62px "PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(c.ch, 0, 4); }
     }
-    ctx.fillStyle = '#ffb3d9';                                        // 吸盤
-    for (let k = 1; k < n; k += 3) { const [x, y, w] = at(k / n); ctx.fillRect(Math.round(x - w / 2 + 3), Math.round(y + 3), 6, 6); }
-    ctx.fillStyle = '#3b1a5a'; ctx.fillRect(tx - 36, ty - 10, 16, 30);   // 捲起來抓住牌子
-    ctx.fillStyle = '#9b59d0'; ctx.fillRect(tx - 33, ty - 7, 10, 24);
-    drawSign(tx, ty, a.ch, selected ? '#f08a3c' : '#3b2414', a.wrong > 0 ? '#ffc4c4' : a.ok ? '#c8f7c0' : '#ffffff');
-    if (selected) { ctx.fillStyle = '#f08a3c'; ctx.fillRect(tx - 8, ty - 46, 16, 8); ctx.fillRect(tx - 4, ty - 38, 8, 6); }
+    ctx.restore();
   }
-  function drawOcto() {
+  function drawShell() {
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     drawBiomeBg('beach', 1);
-    const t = OCTO.t;
+    const t = SHELL.t;
     ctx.save();
     if (cam.shake > 0) ctx.translate(rand(-5, 5), rand(-4, 4));
-    // 章魚大王從遠方海面探出頭；被打到會抖、縮下去
-    const sz = 250, sink = OCTO.phase === 'win' ? Math.min(1, t / 1.8) * 280 : 0;
-    const ox = viewW * 0.6 - sz / 2 + (OCTO.hurt > 0 ? Math.sin(t * 50) * 8 : 0), oy = 36 + Math.sin(t * 1.5) * 6 + sink + (OCTO.hurt > 0 ? 16 : 0);
+    const sz = 190, sink = SHELL.phase === 'win' ? Math.min(1, t / 1.8) * 260 : 0;   // 章魚大王在海裡看著
+    const ox = viewW * 0.5 - sz / 2 + (SHELL.hurt > 0 ? Math.sin(t * 50) * 8 : 0), oy = 4 + Math.sin(t * 1.5) * 6 + sink + (SHELL.hurt > 0 ? 14 : 0);
     ctx.imageSmoothingEnabled = false;
-    if (IMG.octo) {
-      ctx.drawImage(IMG.octo, ox, oy, sz, sz);
-      if (OCTO.hurt > 0 && Math.floor(t * 16) % 2) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .55; ctx.drawImage(IMG.octo, ox, oy, sz, sz); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
+    if (IMG.octo) ctx.drawImage(IMG.octo, ox, oy, sz, sz);
+    const sea = ['#3cc6d8', '#33b8d3', '#2aa9ca'];
+    sea.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(0, SHELL_SEA - 30 + i * 18, viewW + 2, 19); });
+    ctx.fillStyle = 'rgba(255,255,255,.55)';
+    for (let x = ((-t * 20) % 110 + 110) % 110 - 110; x < viewW; x += 110) ctx.fillRect(Math.round(x), SHELL_SEA - 28, 30, 4);
+    ctx.fillStyle = '#f3cf7d'; ctx.fillRect(0, SHELL_SEA + 24, viewW + 2, VIEW_H);                 // 沙灘
+    ctx.fillStyle = '#e9b95c'; for (let i = 0; i < 40; i++) ctx.fillRect((i * 97) % viewW, SHELL_SEA + 40 + (i * 53) % 300, 8, 4);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, SHELL_SEA + 22, viewW + 2, 4);
+    SHELL.cards.forEach((c, i) => drawShellCard(c, SHELL.phase === 'play' && i === SHELL.sel));
+    drawFx();
+    ctx.restore();
+    if (flash.t > 0) { ctx.fillStyle = `rgba(${flash.color},${Math.min(.45, flash.t * 1.4)})`; ctx.fillRect(0, 0, viewW + 2, VIEW_H); }
+  }
+
+  // ───────── 第 5 關：熔岩魔王丟出寫著字的火球，聽聲音，用正確的聲調砲台打掉它 ─────────
+  const TONES = [['ˉ', '一聲'], ['ˊ', '二聲'], ['ˇ', '三聲'], ['ˋ', '四聲']];
+  const TONE = { phase: '', t: 0, hp: 4, ball: null, shots: [], sel: 0, locked: false, hurt: 0, order: [], pool: [] };
+  const toneOf = zy => /ˊ/.test(zy) ? 1 : /ˇ/.test(zy) ? 2 : /ˋ/.test(zy) ? 3 : /˙/.test(zy) ? -1 : 0;
+  function tonePool() {                                            // 例詞裡的每個字：字、注音、聲調
+    const out = [], seen = new Set();
+    const add = (char, word, emoji, zy) => { const t = toneOf(zy || ''); if (t < 0 || !zy || seen.has(char)) return; seen.add(char); out.push({ char, word, emoji, zy: zy.replace(/[ˊˇˋ˙]/g, ''), tone: t }); };
+    for (const u of window.ZHUYIN_UNITS || []) for (const s of u.symbols) [...s.word].forEach((c, i) => add(c, s.word, s.emoji, s.reading[i]));
+    for (const pr of window.ZHUYIN_PAIRS || []) for (const it of pr.items) add(it.word[it.at], it.word, it.emoji, it.zy);
+    return out;
+  }
+  const cannonX = i => viewW / 2 + (i - 1.5) * Math.min(170, viewW / 4.6);
+  const TONE_GROUND = 440;
+  function sayTone() { const b = TONE.ball; b && window.Voice && Voice.speak(`${b.q.char}，${b.q.word}的${b.q.char}`, 0.8); }
+  function startToneGame() {
+    state = 'tone'; miniTimers = []; particles = []; popups = [];
+    Object.assign(TONE, { phase: 'play', t: 0, hp: 4, ball: null, shots: [], sel: 0, locked: false, hurt: 0, pool: tonePool(),
+                          order: [0, 1, 2, 3].sort(() => Math.random() - .5) });
+    openMiniHud('聽火球上的字是第幾聲，點聲調砲台（或按 1 2 3 4）打掉它'); hudHp('🔥', TONE.hp);
+    beeMsg('熔岩魔王要丟火球了！仔細聽是第幾聲！');
+    toast('聽聲調：一聲 ˉ、二聲 ˊ、三聲 ˇ、四聲 ˋ', 3);
+    after(1.2, nextFireball);
+  }
+  function nextFireball() {
+    const want = TONE.order.length ? TONE.order.shift() : randi(0, 3);
+    const cand = TONE.pool.filter(q => q.tone === want);
+    const q = cand[randi(0, cand.length - 1)] || TONE.pool[randi(0, TONE.pool.length - 1)];
+    TONE.ball = { q, x: viewW * 0.72, y: 120, x0: viewW * 0.72, tx: viewW / 2 + rand(-120, 120), t: 0, dur: 9, misses: 0, boom: 0 };
+    TONE.locked = false;
+    window.Sfx && Sfx.play('roar');
+    beeMsg(`「${q.char}」是第幾聲？`);
+    after(.6, sayTone);
+  }
+  function fireCannon(i) {
+    const b = TONE.ball;
+    if (TONE.phase !== 'play' || TONE.locked || !b || b.boom) return;
+    TONE.sel = i; TONE.locked = true;
+    TONE.shots.push({ i, t: 0, x0: cannonX(i), y0: TONE_GROUND - 50 });
+    window.Sfx && Sfx.play('magic');
+  }
+  function resolveToneShot(i) {
+    const b = TONE.ball;
+    if (!b || b.boom) { TONE.locked = false; return; }
+    if (i === b.q.tone) {
+      b.boom = 0.001; TONE.hp--; hudHp('🔥', TONE.hp); TONE.hurt = .7;
+      flash = { t: .25, color: '255,255,255' }; cam.shake = .25;
+      popups.push({ x: b.x, y: b.y - 40, text: `${b.q.zy}${TONES[i][0] === 'ˉ' ? '' : TONES[i][0]} ${TONES[i][1]}`, t: 0 });
+      for (let k = 0; k < 20; k++) particles.push({ x: b.x, y: b.y, vx: rand(-280, 280), vy: rand(-320, 60), t: 0, life: .7, col: k % 2 ? '#bfe8ff' : '#ffffff' });
+      window.Sfx && Sfx.play('correct'); window.Sfx && Sfx.play('zap');
+      beeMsg(`答對了！「${b.q.char}」是${TONES[i][1]}！`, 'ok');
+      after(1.4, () => TONE.hp > 0 ? nextFireball() : toneWin());
+    } else {
+      hitsTaken++; b.misses++;
+      window.Sfx && Sfx.play('wrong');
+      beeMsg(`不是${TONES[i][1]}喔，再聽一次！`, 'bad');
+      b.dur += 1.5;                                                  // 答錯讓火球慢一點，多一點時間想
+      after(.5, () => { TONE.locked = false; sayTone(); });
     }
-    // 大海（一條一條的像素色帶 + 會動的浪花）
-    const sea = ['#3cc6d8', '#33b8d3', '#2aa9ca', '#239bbf', '#1d8fb0', '#187ea0'];
-    sea.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(0, OCTO_SEA + i * 40, viewW + 2, i === sea.length - 1 ? VIEW_H : 41); });
-    ctx.fillStyle = 'rgba(255,255,255,.5)';
-    for (let r = 0; r < 6; r++) {
-      const y = OCTO_SEA + 8 + r * 38, gap = 130 + r * 20;
-      for (let x = ((r * 53 - t * (12 + r * 5)) % gap + gap) % gap - gap; x < viewW; x += gap) ctx.fillRect(Math.round(x), y, 24 + r * 4, 4);
+  }
+  function fireballLanded() {                                       // 沒打到：火球落地爆開，換下一顆（這顆的字再出一次）
+    const b = TONE.ball; b.boom = 0.001; hitsTaken++;
+    cam.shake = .35; flash = { t: .3, color: '255,90,40' };
+    for (let k = 0; k < 20; k++) particles.push({ x: b.x, y: TONE_GROUND - 20, vx: rand(-260, 260), vy: rand(-300, -60), t: 0, life: .7, col: k % 2 ? '#ff7a1a' : '#ffcf3f' });
+    window.Sfx && Sfx.play('slam');
+    beeMsg(`火球掉下來了！「${b.q.char}」是${TONES[b.q.tone][1]}，記住喔！`, 'bad');
+    TONE.order.unshift(b.q.tone);
+    after(1.8, nextFireball);
+  }
+  function toneWin() {
+    TONE.phase = 'win'; TONE.t = 0; TONE.ball = null;
+    saveGameRecord(1);
+    beeMsg('打敗熔岩魔王了！你是注音大英雄！', 'ok');
+    window.Sfx && Sfx.play('zap');
+    for (let i = 0; i < 30; i++) particles.push({ x: viewW * .72, y: 140, vx: rand(-320, 320), vy: rand(-380, 40), t: 0, life: .9, star: true });
+    after(2.4, () => { closeMiniHud(); levelClear(); });
+  }
+  function toneKey(e) {
+    const n = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Numpad1: 0, Numpad2: 1, Numpad3: 2, Numpad4: 3 }[e.code];
+    if (n !== undefined) return fireCannon(n);
+    if (e.code === 'KeyR') return sayTone();
+    if (e.code === 'ArrowRight') TONE.sel = (TONE.sel + 1) % 4;
+    else if (e.code === 'ArrowLeft') TONE.sel = (TONE.sel + 3) % 4;
+    else if (['Space', 'Enter', 'KeyX', 'KeyK'].includes(e.code)) return fireCannon(TONE.sel);
+    else return;
+    window.Sfx && Sfx.play('click');
+  }
+  function toneStep(dt) {
+    TONE.t += dt; TONE.hurt = Math.max(0, TONE.hurt - dt);
+    const b = TONE.ball;
+    if (b) {
+      if (b.boom) { b.boom += dt; if (b.boom > .5) TONE.ball = null; }
+      else {
+        b.t += dt; const k = Math.min(1, b.t / b.dur);
+        b.x = b.x0 + (b.tx - b.x0) * k; b.y = 120 + (TONE_GROUND - 150) * k;
+        if (k >= 1) fireballLanded();
+      }
     }
-    const alive = OCTO.arms.filter(a => !a.gone);
-    const canPick = OCTO.phase === 'play' && !OCTO.locked;
-    for (const a of OCTO.arms) drawArm(a, canPick && alive[OCTO.sel % Math.max(1, alive.length)] === a);
-    // 近處水面（觸手從這裡伸出來）
-    ctx.fillStyle = '#1d8fb0'; ctx.fillRect(0, OCTO_WATER, viewW + 2, VIEW_H - OCTO_WATER);
-    ctx.fillStyle = '#3cc6d8'; ctx.fillRect(0, OCTO_WATER, viewW + 2, 6);
-    ctx.fillStyle = '#ffffff';
-    for (let x = ((-t * 30) % 90 + 90) % 90 - 90; x < viewW; x += 90) ctx.fillRect(Math.round(x), OCTO_WATER - 2 + Math.round(Math.sin(x * .05 + t * 3) * 2), 20, 4);
-    // 小簡站的岩石
-    const [hx] = octoHome();
-    ctx.fillStyle = '#3b2414'; ctx.fillRect(hx - 64, OCTO_ROCK - 4, 128, VIEW_H);
-    ctx.fillStyle = '#8a8178'; ctx.fillRect(hx - 60, OCTO_ROCK, 120, VIEW_H);
-    ctx.fillStyle = '#b8ad9e'; ctx.fillRect(hx - 60, OCTO_ROCK, 120, 10); ctx.fillRect(hx - 50, OCTO_ROCK + 22, 18, 8);
-    ctx.fillStyle = '#6b6259'; ctx.fillRect(hx + 18, OCTO_ROCK + 40, 26, 10); ctx.fillRect(hx - 30, OCTO_ROCK + 70, 22, 8);
-    drawKid(OCTO.kid, OCTO_WATER + 8);
+    for (const s of TONE.shots) { s.t += dt; if (s.t >= .35 && !s.done) { s.done = true; resolveToneShot(s.i); } }
+    TONE.shots = TONE.shots.filter(s => s.t < .36);
+    miniTick(dt);
+  }
+  // 聲調符號畫成粗粗的像素線條（字型裡的 ˉˊˇˋ 太細，小朋友看不清楚）
+  function drawToneMark(i, cx, cy, col) {
+    ctx.fillStyle = col;
+    const B = 6, px = (x, y) => ctx.fillRect(cx + x * B - B / 2, cy + y * B - B / 2, B, B);
+    if (i === 0) for (let k = -3; k <= 3; k++) px(k, 0);
+    if (i === 1) for (let k = -3; k <= 3; k++) px(k, -k);
+    if (i === 2) for (let k = -3; k <= 3; k++) px(k, 2 - Math.abs(k));                  // ˇ：V 字形
+    if (i === 3) for (let k = -3; k <= 3; k++) px(k, k);
+  }
+  function drawTone() {
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    drawBiomeBg('volcano', 1);
+    const t = TONE.t;
+    ctx.save();
+    if (cam.shake > 0) ctx.translate(rand(-5, 5), rand(-4, 4));
+    if (IMG.lava) {                                                // 熔岩魔王
+      const win = TONE.phase === 'win', k = win ? Math.min(1, t / 1.6) : 0, sz = 200;
+      ctx.save(); ctx.globalAlpha = 1 - k;
+      ctx.translate(viewW * 0.78 + (TONE.hurt > 0 ? Math.sin(t * 50) * 8 : 0), 230 + k * 140 + Math.sin(t * 2) * 5);
+      ctx.imageSmoothingEnabled = false; ctx.drawImage(IMG.lava, -sz / 2, -sz, sz, sz);
+      if (TONE.hurt > 0 && Math.floor(t * 16) % 2) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .5; ctx.drawImage(IMG.lava, -sz / 2, -sz, sz, sz); }
+      ctx.restore();
+    }
+    ctx.fillStyle = '#2a1219'; ctx.fillRect(0, TONE_GROUND, viewW + 2, VIEW_H);          // 地面＋岩漿縫
+    ctx.fillStyle = '#4a3438'; ctx.fillRect(0, TONE_GROUND, viewW + 2, 10);
+    ctx.fillStyle = '#ff7a1a'; for (let i = 0; i < 12; i++) ctx.fillRect((i * 131 + 40) % viewW, TONE_GROUND + 24 + (i % 3) * 18, 26, 4);
+    // 火球
+    const b = TONE.ball;
+    if (b) {
+      const k = b.boom ? 1 + b.boom * 3 : 1, a = b.boom ? 1 - b.boom * 2 : 1;
+      ctx.save(); ctx.globalAlpha = Math.max(0, a); ctx.translate(b.x, b.y); ctx.scale(k, k);
+      for (let i = 0; i < 6; i++) { ctx.fillStyle = i % 2 ? '#ff7a1a' : '#ffcf3f'; ctx.fillRect(-8 - i * 3 + Math.sin(t * 20 + i) * 3, -50 - i * 10, 16, 12); }   // 火焰尾巴
+      ctx.fillStyle = '#3b2414'; ctx.fillRect(-44, -44, 88, 88);
+      ctx.fillStyle = '#e8501a'; ctx.fillRect(-40, -40, 80, 80);
+      ctx.fillStyle = '#ffcf3f'; ctx.fillRect(-32, -32, 64, 64);
+      ctx.fillStyle = '#fffaeb'; ctx.fillRect(-26, -26, 52, 52);
+      ctx.fillStyle = '#3b2414'; ctx.font = '44px "PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(b.q.char, 0, 2);
+      ctx.restore();
+      if (!b.boom) {                                               // 注音（不含聲調）提示在旁邊
+        ctx.font = '22px "PingFang TC","Noto Sans TC",sans-serif'; ctx.textAlign = 'center';
+        const tw = ctx.measureText(b.q.zy).width + 16;
+        ctx.fillStyle = 'rgba(27,18,32,.75)'; ctx.fillRect(b.x - tw / 2, b.y + 50, tw, 28);
+        ctx.fillStyle = '#fffaeb'; ctx.fillText(b.q.zy, b.x, b.y + 65);
+      }
+    }
+    // 四座聲調砲台
+    for (let i = 0; i < 4; i++) {
+      const x = cannonX(i), sel = TONE.phase === 'play' && i === TONE.sel, recoil = TONE.shots.some(s => s.i === i) ? 6 : 0;
+      ctx.fillStyle = sel ? '#f08a3c' : '#3b2414'; ctx.fillRect(x - 46, TONE_GROUND - 96 + recoil, 92, 96);
+      ctx.fillStyle = '#8aa0b8'; ctx.fillRect(x - 42, TONE_GROUND - 92 + recoil, 84, 88);
+      ctx.fillStyle = '#c3d6e8'; ctx.fillRect(x - 42, TONE_GROUND - 92 + recoil, 84, 10);
+      ctx.fillStyle = '#3b2414'; ctx.fillRect(x - 14, TONE_GROUND - 124 + recoil, 28, 34);       // 砲管
+      ctx.fillStyle = '#5b7a9a'; ctx.fillRect(x - 10, TONE_GROUND - 120 + recoil, 20, 30);
+      drawToneMark(i, x, TONE_GROUND - 58 + recoil, '#3b2414');
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fffaeb'; ctx.font = '16px "PingFang TC","Noto Sans TC",sans-serif'; ctx.fillText(`${i + 1}・${TONES[i][1]}`, x, TONE_GROUND - 18 + recoil);
+    }
+    for (const s of TONE.shots) {                                  // 冰水砲彈
+      const bb = TONE.ball || { x: s.x0, y: 0 }, k = Math.min(1, s.t / .35);
+      const x = s.x0 + (bb.x - s.x0) * k, y = s.y0 + (bb.y - s.y0) * k;
+      ctx.fillStyle = '#2c3e55'; ctx.fillRect(x - 10, y - 10, 20, 20); ctx.fillStyle = '#bfe8ff'; ctx.fillRect(x - 7, y - 7, 14, 14);
+    }
     drawFx();
     ctx.restore();
     if (flash.t > 0) { ctx.fillStyle = `rgba(${flash.color},${Math.min(.45, flash.t * 1.4)})`; ctx.fillRect(0, 0, viewW + 2, VIEW_H); }
@@ -1806,12 +1956,105 @@
     ctx.restore();
     if (flash.t > 0) { ctx.fillStyle = `rgba(${flash.color},${Math.min(.45, flash.t * 1.4)})`; ctx.fillRect(0, 0, viewW + 2, VIEW_H); }
   }
+  // ───────── 關卡中途的「注音門」：走到門前，天上出現一個字並念出來；跳起來頂正確的注音方塊，門才會打開 ─────────
+  let quizzes = [];
+  const QB = 62;                                                     // 注音方塊大小
+  function makeQuiz() {
+    const src = [...(level.symbols || ZHUYIN)].filter(c => ZHUYIN_INDEX[c] && !gen.quizUsed.includes(c));
+    const ch = src.length ? src[randi(0, src.length - 1)] : 'ㄅ';
+    gen.quizUsed.push(ch);
+    const s = ZHUYIN_INDEX[ch], zy = plainZy(s.reading[s.at] || ''), cls = zyClass(ch);
+    const others = pickOptions(ch, 9, [...(level.symbols || '')].filter(c => cls.includes(c)), [...cls]).filter(c => c !== ch && !zy.includes(c)).slice(0, 2);
+    return { ch, char: s.word[s.at], word: s.word, emoji: s.emoji, first: zy[0] === ch, opts: [ch, ...others].sort(() => Math.random() - .5) };
+  }
+  function placeQuiz() {
+    gen.quizAt.shift();
+    if (level.endless) gen.quizAt.push(gen.x + 3600);
+    const y = clamp(gen.y, 380, 440), x0 = gen.x + 60;
+    const zone = addPlatform(x0, y, 980, false);
+    const quiz = { x: x0, y, q: makeQuiz(), state: 'wait', t: 0, gateX: x0 + 830, open: 0 };
+    quiz.q.opts.forEach((ch, i) => qblocks.push({ x: x0 + 320 + i * 160, y: y - 200, w: QB, h: QB, used: false, bump: 0, quiz, ch, wrong: 0 }));
+    quizzes.push(quiz);
+    gen.x = x0 + zone.w; gen.y = y;
+  }
+  const quizSign = qz => ({ x: qz.x + 320 + 160 + QB / 2 - 130, y: qz.y - 360, w: 260, h: 120 });
+  function sayQuiz(qz) { window.Voice && Voice.speak(`${qz.q.char}，${qz.q.word}的${qz.q.char}`, 0.85); }
+  function quizHit(b) {
+    const qz = b.quiz;
+    if (qz.state === 'done') return;
+    if (qz.state === 'wait') { qz.state = 'ask'; sayQuiz(qz); return; }
+    if (b.ch === qz.q.ch) {
+      qz.state = 'done'; b.ok = true;
+      gemCount += 3;
+      popups.push({ x: b.x + b.w / 2, y: b.y - 20, text: `${b.ch} 答對了！`, t: 0 });
+      for (let i = 0; i < 16; i++) particles.push({ x: b.x + b.w / 2, y: b.y, vx: rand(-240, 240), vy: rand(-380, -60), t: 0, life: .7, star: true });
+      window.Sfx && Sfx.play('correct'); setTimeout(() => window.Sfx && Sfx.play('checkpoint'), 300);
+      window.Voice && Voice.speakSymbol(ZHUYIN_INDEX[b.ch]);
+      toast('答對了！門打開了，繼續前進！', 2.2);
+    } else {
+      b.wrong = .5;
+      window.Sfx && Sfx.play('wrong');
+      toast(`不是「${b.ch}」喔，再聽一次！`, 1.8);
+      setTimeout(() => state === 'play' && qz.state === 'ask' && sayQuiz(qz), 500);
+    }
+  }
+  function quizStep(dt) {
+    const p = player;
+    for (const qz of quizzes) {
+      qz.t += dt;
+      if (qz.state === 'wait' && p.x > qz.x + 140) { qz.state = 'ask'; qz.t = 0; sayQuiz(qz); toast(qz.q.first ? '跳起來頂出第一個注音！' : '跳起來頂出它的注音！', 2.4); window.Sfx && Sfx.play('select'); }
+      if (qz.state === 'done') qz.open = Math.min(1, qz.open + dt * 1.6);
+      if (qz.open < 1 && p.x + P_W > qz.gateX && p.x < qz.gateX + 40) { p.x = qz.gateX - P_W; p.vx = Math.min(p.vx, 0); }   // 門還沒開：過不去
+    }
+    for (const b of qblocks) if (b.wrong) b.wrong = Math.max(0, b.wrong - dt);
+  }
+  function drawQuizBlock(b, dy) {
+    const done = b.quiz.state === 'done', sh = b.wrong > 0 ? Math.sin(b.wrong * 60) * 4 : 0, x = b.x + sh, y = b.y + dy;
+    ctx.globalAlpha = done && !b.ok ? .45 : 1;
+    ctx.fillStyle = '#3b2414'; ctx.fillRect(x - 3, y - 3, b.w + 6, b.h + 6);
+    ctx.fillStyle = b.ok ? '#8fe07a' : b.wrong > 0 ? '#ffb3b3' : '#ffcf3f'; ctx.fillRect(x, y, b.w, b.h);
+    ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fillRect(x + 4, y + 4, b.w - 8, 5);
+    ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(x + 4, y + b.h - 8, b.w - 8, 4);
+    ctx.fillStyle = '#3b2414'; ctx.font = '40px "PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(b.ch, x + b.w / 2, y + b.h / 2 + 2);
+    ctx.globalAlpha = 1;
+  }
+  function drawQuizzes() {
+    for (const qz of quizzes) {
+      if (qz.gateX < cam.x - 100 || qz.x > cam.x + viewW + 200) continue;
+      const h = 250 * (1 - qz.open);                               // 木門：答對後往下縮進地裡
+      if (h > 2) {
+        const gx = qz.gateX, top = qz.y - h;
+        ctx.fillStyle = '#3b2414'; ctx.fillRect(gx - 3, top - 3, 46, h + 3);
+        ctx.fillStyle = '#b97a48'; ctx.fillRect(gx, top, 40, h);
+        ctx.fillStyle = '#94592f'; for (let yy = top + 14; yy < qz.y - 6; yy += 28) ctx.fillRect(gx, yy, 40, 5);
+        if (h > 120) { ctx.fillStyle = '#ffcf3f'; ctx.fillRect(gx + 10, top + 40, 20, 18); ctx.fillStyle = '#3b2414'; ctx.fillRect(gx + 18, top + 46, 4, 8); }
+      }
+      if (qz.state === 'done' && qz.open >= 1) continue;
+      const s = quizSign(qz), bob = Math.sin(qz.t * 2) * 4, sy = s.y + bob;   // 天上的題目牌：字＋圖
+      ctx.fillStyle = '#3b2414'; ctx.fillRect(s.x - 4, sy - 4, s.w + 8, s.h + 8);
+      ctx.fillStyle = '#fffaeb'; ctx.fillRect(s.x, sy, s.w, s.h);
+      const img = window.PixelArt && PixelArt.canvas(qz.q.emoji, 24);
+      ctx.imageSmoothingEnabled = false; if (img) ctx.drawImage(img, s.x + 14, sy + 24, 72, 72);
+      ctx.fillStyle = '#d0552b'; ctx.font = '64px "PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(qz.q.char, s.x + 140, sy + 52);
+      ctx.fillStyle = '#7a6450'; ctx.font = '17px "PingFang TC","Noto Sans TC",sans-serif';
+      ctx.fillText(qz.state === 'done' ? '答對了！' : qz.q.first ? '第一個注音是？' : '有哪一個注音？', s.x + 140, sy + 100);
+      const ic = window.PixelArt && PixelArt.iconCanvas('sound');                         // 點牌子可以再聽一次
+      if (ic) ctx.drawImage(ic, s.x + s.w - 40, sy + 8, 32, 24);
+    }
+  }
+
   canvas.addEventListener('pointerdown', e => {
     const [x, y] = tapXY(e);
-    if (state === 'octo' && OCTO.phase === 'play') {
-      let best = null, bd = 70;
-      for (const a of OCTO.arms) { if (a.gone) continue; const [ax, ay] = armTip(a); const d = Math.abs(ax - x) + (y < ay - 60 ? (ay - 60 - y) : 0); if (d < bd) { bd = d; best = a; } }
-      if (best) octoJump(best);
+    if (state === 'shell' && SHELL.phase === 'play') {
+      const c = SHELL.cards.find(c => Math.abs(c.x - x) < 64 && Math.abs(c.y - y) < 52);
+      if (c) { SHELL.sel = SHELL.cards.indexOf(c); flipShell(c); }
+    } else if (state === 'tone' && TONE.phase === 'play') {
+      for (let i = 0; i < 4; i++) if (Math.abs(cannonX(i) - x) < 50 && y > TONE_GROUND - 130) return fireCannon(i);
+      const b = TONE.ball; if (b && Math.hypot(b.x - x, b.y - y) < 60) sayTone();
+    } else if (state === 'play') {                                    // 點天上的題目牌：再聽一次
+      for (const qz of quizzes) { const sg = quizSign(qz); if (qz.state !== 'done' && x + cam.x > sg.x && x + cam.x < sg.x + sg.w && y > sg.y && y < sg.y + sg.h) return sayQuiz(qz); }
     } else if (state === 'ice' && ICE.phase === 'play') {
       for (const f of ICE.cols.flat()) { const [fx, fy] = floeTop(f); if (!f.broken && Math.abs(fx - x) < FLOE_W / 2 + 6 && y > fy - 30 && y < fy + FLOE_H + 6) return iceHop(f); }
     }
@@ -1819,7 +2062,8 @@
 
   function step(dt) {
     if (state === 'bee-grab' || state === 'bees') return beeStep(dt);
-    if (state === 'octo') return octoStep(dt);
+    if (state === 'shell') return shellStep(dt);
+    if (state === 'tone') return toneStep(dt);
     if (state === 'ice') return iceStep(dt);
     const p = player;
     const control = state === 'play';
@@ -2009,6 +2253,7 @@
       }
     }
     for (const b of qblocks) b.bump = Math.max(0, b.bump - dt);
+    quizStep(dt);
 
     // 大怪物出現
     if (boss) {
@@ -2028,7 +2273,8 @@
           else flames.push({ x: boss.x + boss.w * 0.08, y: boss.y + boss.h * 0.55 + rand(-12, 12), vx: rand(-360, -240), vy: rand(-30, 30), t: 0, life: .7, rot: rand(0, 6) });
         }
         if (boss.t > 1.8 && state === 'boss-intro') {
-          if (!level.endless && level.challenge === 'octo') startOctoGame();
+          if (!level.endless && level.challenge === 'shell') startShellGame();
+          else if (!level.endless && level.challenge === 'tone') startToneGame();
           else if (!level.endless && level.challenge === 'ice') startIceGame();
           else { state = 'boss-wait'; bossScreen.classList.remove('hidden'); }
         }
@@ -2074,6 +2320,8 @@
 
     // 鏡頭：只往前（像瑪利歐）；大怪物出現時把牠帶進畫面
     let target = p.x - viewW * 0.38;
+    const aq = quizzes.find(q => q.state !== 'done' && p.x > q.x && p.x < q.gateX);   // 注音門：把題目牌和三個方塊都放進畫面
+    if (aq) target = Math.max(target, Math.min(aq.x + 320 + 191 - viewW / 2, p.x - 60));
     if (boss && (state === 'boss-intro' || state === 'boss-wait')) target = Math.max(target, boss.x + boss.w + 60 - viewW);
     if (target > cam.x) cam.x += (target - cam.x) * Math.min(1, dt * (state === 'play' ? 8 : 3));
     cam.shake = Math.max(0, cam.shake - dt);
@@ -2137,7 +2385,8 @@
 
   function draw() {
     if (state === 'bees') return drawBees();
-    if (state === 'octo') return drawOcto();
+    if (state === 'shell') return drawShell();
+    if (state === 'tone') return drawTone();
     if (state === 'ice') return drawIce();
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     ctx.imageSmoothingQuality = 'high';
@@ -2195,8 +2444,9 @@
     }
     for (const b of qblocks) if (vis(b)) {
       const dy = -Math.sin(Math.min(1, b.bump / 0.18) * Math.PI) * 10;
-      drawTile(b.used ? TILE.used : TILE.qblock, b.x, b.y + dy, b.w);
+      if (b.quiz) drawQuizBlock(b, dy); else drawTile(b.used ? TILE.used : TILE.qblock, b.x, b.y + dy, b.w);
     }
+    drawQuizzes();
     for (const f of flags) if (vis({ x: f.x - 30, w: 60 })) {
       ctx.save(); ctx.globalAlpha = f.on ? 1 : 0.75;
       drawTile(TILE.pole, f.x - KS / 2, f.y - KS, KS);
@@ -2507,7 +2757,7 @@
   let last = performance.now(), acc = 0;
   const STEP = 1 / 120;
   window.__game = { player, cam, keys, get platforms() { return platforms; }, get minions() { return enemies; }, get enemies() { return enemies; }, get qblocks() { return qblocks; }, get springs() { return springs; }, get spikes() { return spikes; }, get flags() { return flags; }, get bolts() { return bolts; }, addEnemy, hitBlock, hurt, get checkpoint() { return checkpoint; }, press(k) { if (k === 'magic') magicPressed = true; }, get boss() { return boss; },
-                    get state() { return state; }, get bee() { return BEE; }, shootBee, get octo() { return OCTO; }, octoJump, get ice() { return ICE; }, iceHop, tick(sec) { for (let i = 0; i < sec * 120; i++) step(STEP); draw(); } };   // 除錯用
+                    get state() { return state; }, get bee() { return BEE; }, shootBee, get shell() { return SHELL; }, flipShell, get tone() { return TONE; }, fireCannon, get quizzes() { return quizzes; }, get ice() { return ICE; }, iceHop, tick(sec) { for (let i = 0; i < sec * 120; i++) step(STEP); draw(); } };   // 除錯用
   function frame(now) {
     acc += Math.min(0.1, (now - last) / 1000);
     last = now;
@@ -2527,7 +2777,7 @@
                load('assets/kenney/tiles.png'), load('assets/kenney/chars.png')]).then(([pi, g, b, bo, mi, fi, kt, kc]) => {
     IMG.player = pi; IMG.boss = cleanBoss(bo); IMG.minion = mi; IMG.fire = fi; IMG.tiles = kt; IMG.chars = kc;
     IMG.slime = buildSprite(PIX.slime); IMG.ghost = buildSprite(PIX.ghost); IMG.ghostShy = buildSprite(PIX.ghostShy);
-    IMG.wand = buildSprite(PIX.wand); IMG.octo = buildOctopus(); IMG.yeti = buildYeti();
+    IMG.wand = buildSprite(PIX.wand); IMG.octo = buildOctopus(); IMG.yeti = buildYeti(); IMG.lava = buildLava();
     IMG.queen = [buildBee(true, false), buildBee(true, true)]; IMG.beeImgs = [buildBee(false, false), buildBee(false, true)];
     renderBestiary();
     BIOMES.grass.img = g; BIOMES.beach.img = b;
