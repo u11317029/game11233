@@ -6,6 +6,7 @@
 //   PixelArt.img('🐘', 24, cls) 回傳 <img> 的 HTML 字串
 //   PixelArt.icon(name)         UI 圖示（自己畫的像素圖，見 ICONS），回傳 <img> 的 HTML 字串
 //   PixelArt.hydrate(root)      把 <i data-px="🐘"> / <i data-icon="home"> 換成像素圖
+//   PixelArt.auto()             （載入時自動執行）頁面上所有表情符號都換成像素圖，之後新出現的文字也會換
 window.PixelArt = (() => {
   const INK = '#3b2414';
   const cache = {};
@@ -86,6 +87,8 @@ window.PixelArt = (() => {
           'kwwwwkbbbbkwwwwk', '.kwwwwkkkkwwwwk.', '..kkwwwwwwwwkk..', '....kkkkkkkk....'],
     hand: ['......kk........', '.....kcck.......', '.....kcck.......', '.....kcck.......', '.....kcckkk.....', '.....kcckcckk...', '..kk.kcckcckcck.', '.kcckkcccccckcck',
            '.kccckccccccccck', '..kccccccccccck.', '...kcccccccccck.', '....kccccccccck.', '.....kcccccck...', '......kkkkkk....'],
+    starOff: ['.......kk.......', '......kcck......', '......kcck......', '.....kcccck.....', 'kkkkkkcccckkkkkk', 'kccccccccccccccck', '.kcccccccccccck.', '..kcccccccccck..',
+              '...kcccccccck...', '..kcccccccccck..', '..kcccckkcccck..', '.kccck....kccck.', '.kcck......kcck.', '.kkk........kkk.'],
     star: ['.......kk.......', '......kyyk......', '......kyyk......', '.....kyyyyk.....', 'kkkkkkyyyykkkkkk', 'kyyyyyyyyyyyyyyk', '.kyyyyyyyyyyyyk.', '..kyyyyyyyyyyk..',
            '...kyyyyyyyyk...', '..kyyyyyyyyyyk..', '..kyyyykkyyyyk..', '.kyyyk....kyyyk.', '.kyyk......kyyk.', '.kkk........kkk.'],
     gem: ['....kkkkkkk.....', '...kbwbbbbbk....', '..kbwbbbbbbbk...', '.kkkkkkkkkkkkk..', '.kbbbbbBBBbbBk..', '..kbbbbBBbbBk...', '...kbbbBbbBk....', '....kbbbbBk.....',
@@ -132,10 +135,10 @@ window.PixelArt = (() => {
     if (iconCache[name]) return iconCache[name];
     const rows = ICONS[name];
     if (!rows) return null;
-    const w = Math.max(...rows.map(r => r.length)), h = rows.length, c = document.createElement('canvas');
-    c.width = w; c.height = h;
+    const w = Math.max(16, ...rows.map(r => r.length)), h = Math.max(16, rows.length), oy = Math.floor((h - rows.length) / 2), c = document.createElement('canvas');
+    c.width = w; c.height = h;                                    // 補成正方形，排在文字裡大小才會一致
     const g = c.getContext('2d');
-    rows.forEach((r, y) => [...r].forEach((ch, x) => { if (PAL[ch]) { g.fillStyle = PAL[ch]; g.fillRect(x, y, 1, 1); } }));
+    rows.forEach((r, y) => [...r].forEach((ch, x) => { if (PAL[ch]) { g.fillStyle = PAL[ch]; g.fillRect(x, y + oy, 1, 1); } }));
     return (iconCache[name] = c);
   }
   const iconUrl = name => iconUrls[name] || (iconUrls[name] = (iconCanvas(name) || canvas('❓', 16)).toDataURL());
@@ -147,5 +150,57 @@ window.PixelArt = (() => {
     root.querySelectorAll('[data-icon]').forEach(el => { el.outerHTML = icon(el.dataset.icon, 'pxi ' + (el.className || '')); });
   }
 
-  return { canvas, url, img, icon, iconUrl, iconCanvas, hydrate, ICONS };
+  // ───────── 自動把頁面上的表情符號換成像素圖 ─────────
+  const MAP = { '🏠': 'home', '🗺': 'map', '📚': 'book', '🎮': 'game', '👂': 'ear', '🎧': 'ear', '✍': 'pencil', '📝': 'sheet', '☀': 'sun', '🌈': 'rainbow',
+                '🏅': 'medal', '🎖': 'medal', '👩‍🏫': 'teacher', '👀': 'eye', '☝': 'hand', '👆': 'hand', '⭐': 'star', '🌟': 'star', '☆': 'starOff', '💎': 'gem',
+                '❤': 'heart', '🔊': 'sound', '🔇': 'mute', '🗣': 'voice', '🗑': 'trash', '🎲': 'dice', '🫧': 'bubble', '📅': 'calendar', '🖨': 'print',
+                '🎯': 'target', '💻': 'pc', '❓': 'question', '🪄': 'wand', '🚩': 'flag', '🔒': 'lock' };
+  const KEEP = new Set([...'✓✕✔✗✘➜➤▶◀↺↔↑↓←→✖']);                 // 這些是一般符號，保留文字
+  const RE = /(?:[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B50}\u{2B55}\u{231A}-\u{23FF}]\uFE0F?(?:\u200D[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]\uFE0F?)*)/gu;
+  const SKIP = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'CANVAS', 'SVG', 'TITLE', 'OPTION', 'SELECT', 'CODE', 'PRE']);
+  function emojiImg(e) {
+    const key = e.replace(/\uFE0F/g, ''), im = document.createElement('img');
+    im.className = 'pxi'; im.alt = e; im.draggable = false;
+    im.src = MAP[key] ? iconUrl(MAP[key]) : url(e, 24);
+    return im;
+  }
+  function convertText(node) {
+    const t = node.nodeValue;
+    if (!t || !RE.test(t)) return;
+    RE.lastIndex = 0;
+    const p = node.parentNode;
+    if (!p || SKIP.has(p.nodeName) || p.closest && p.closest('[data-keep-emoji]')) return;
+    const frag = document.createDocumentFragment();
+    let last = 0, m, changed = false;
+    while ((m = RE.exec(t))) {
+      if ([...m[0]].every(ch => KEEP.has(ch) || ch === '\uFE0F')) continue;
+      frag.appendChild(document.createTextNode(t.slice(last, m.index)));
+      frag.appendChild(emojiImg(m[0]));
+      last = m.index + m[0].length; changed = true;
+    }
+    if (!changed) return;
+    frag.appendChild(document.createTextNode(t.slice(last)));
+    p.replaceChild(frag, node);
+  }
+  function walk(root) {
+    if (root.nodeType === 3) return convertText(root);
+    if (root.nodeType !== 1 || SKIP.has(root.nodeName)) return;
+    const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), list = [];
+    while (tw.nextNode()) list.push(tw.currentNode);
+    list.forEach(convertText);
+  }
+  let started = false;
+  function auto() {
+    if (started || !document.body) return;
+    started = true;
+    const st = document.createElement('style');
+    st.textContent = '.pxi{height:1.15em;width:auto;vertical-align:-.22em;display:inline-block;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none;user-select:none}';
+    document.head.appendChild(st);
+    walk(document.body);
+    new MutationObserver(ms => { for (const m of ms) { if (m.type === 'characterData') convertText(m.target); else m.addedNodes.forEach(walk); } })
+      .observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', auto); else auto();
+
+  return { canvas, url, img, icon, iconUrl, iconCanvas, hydrate, auto, ICONS };
 })();
