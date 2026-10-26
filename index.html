@@ -187,6 +187,38 @@
   .pond .msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
                text-align: center; font-size: 22px; font-weight: 900; background: rgba(255,250,235,.85); }
   .warm .fb { min-height: 1.5em; font-weight: 900; font-size: 18px; }
+  .wmodes { display: flex; gap: 6px; flex-wrap: wrap; }
+  .wmodes button { font: inherit; font-size: 15px; cursor: pointer; border: none; background: #fff; color: var(--ink); padding: 4px 10px; margin: 3px;
+                   box-shadow: 0 -3px 0 var(--ink), 0 3px 0 var(--ink), -3px 0 0 var(--ink), 3px 0 0 var(--ink); }
+  .wmodes button.on { background: var(--c, var(--orange)); color: #fff; }
+  .pond.stage { height: auto; min-height: 260px; background: #fffaeb; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .stage h4 { margin: 0; font-size: 19px; font-weight: normal; text-align: center; }
+  .stage .big-zy { font-family: var(--font-teach); color: var(--orange-d); font-size: 1.4em; }
+  .fgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 420px; }
+  .pic { font: inherit; cursor: pointer; border: none; background: #fff; padding: 6px 4px 2px; display: flex; flex-direction: column; align-items: center; color: var(--ink); margin: 3px;
+         font-size: 15px; box-shadow: 0 -3px 0 var(--ink), 0 3px 0 var(--ink), -3px 0 0 var(--ink), 3px 0 0 var(--ink); }
+  .pic .pxi { height: 48px; }
+  .pic.ok { background: #c8f7c0; animation: popin .4s steps(4); } .pic.no { background: #ffd6d6; animation: shake .4s steps(4); }
+  .pic.done { opacity: .5; cursor: default; }
+  .item-card { font-size: 26px; background: #fff; padding: 6px 18px; text-align: center; box-shadow: 0 -3px 0 var(--ink), 0 3px 0 var(--ink), -3px 0 0 var(--ink), 3px 0 0 var(--ink); margin: 3px; }
+  .item-card .pxi { height: 64px; display: block; margin: 0 auto 2px; }
+  .item-card mark { background: #ffe08a; padding: 0 2px; }
+  .item-card.fly { animation: fly .45s steps(5) forwards; } @keyframes fly { to { transform: translateY(60px) scale(.3); opacity: 0; } }
+  .baskets { display: flex; gap: 26px; }
+  .basket { font: inherit; cursor: pointer; border: none; width: 120px; height: 86px; background: #e2a64c; color: #fff; font-family: var(--font-teach); font-size: 46px;
+            box-shadow: 0 -4px 0 var(--ink), 0 4px 0 var(--ink), -4px 0 0 var(--ink), 4px 0 0 var(--ink), inset 0 10px 0 #c4842f; margin: 4px; position: relative; }
+  .basket small { position: absolute; right: 6px; bottom: 2px; font-family: var(--font); font-size: 14px; }
+  .basket.no { animation: shake .4s steps(4); }
+  .slots, .tiles { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .slot, .tile2 { width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; font-family: var(--font-teach); font-size: 34px; margin: 3px;
+                  box-shadow: 0 -3px 0 var(--ink), 0 3px 0 var(--ink), -3px 0 0 var(--ink), 3px 0 0 var(--ink); }
+  .slot { background: #fff3d6; color: var(--ink); } .slot.cur { background: #ffe08a; } .slot.fill { background: #c8f7c0; animation: popin .35s steps(3); }
+  .tile2 { font-family: var(--font-teach); border: none; cursor: pointer; background: #fff; color: var(--ink); }
+  .tile2.used { opacity: .3; cursor: default; } .tile2.no { background: #ffd6d6; animation: shake .4s steps(4); }
+  .more-words { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .more-words button { font: inherit; font-size: 16px; cursor: pointer; border: none; background: #fff; color: var(--ink); padding: 2px 10px 2px 6px; margin: 3px;
+                       box-shadow: 0 -3px 0 var(--ink), 0 3px 0 var(--ink), -3px 0 0 var(--ink), 3px 0 0 var(--ink); }
+  .more-words button .pxi { height: 28px; }
   .warm .fb.ok { color: var(--green); } .warm .fb.bad { color: var(--red); }
 
   /* ───── 學習進度 + 徽章 ───── */
@@ -330,20 +362,16 @@
   <!-- 每日一練：今日注音 + 泡泡暖身 -->
   <section class="panel" id="daily" role="tabpanel">
     <h2 class="sec" style="--c:#c9a227"><span class="bar"></span>☀️ 每日一練</h2>
-    <p class="sec-sub">每天認識一個注音，再用泡泡小遊戲暖暖身。</p>
+    <p class="sec-sub">每天認識一個注音，再到練習場選一種玩法：聽、找、分、拼，每天都不一樣！</p>
     <div class="duo">
       <div class="card today" id="today"></div>
       <div class="card warm">
         <div class="top">
-          <h3>🫧 注音泡泡暖身</h3>
+          <h3 id="warmTitle">🎪 注音練習場</h3>
           <span class="scoreb" id="warmScore"></span>
         </div>
-        <div class="pond" id="pond">
-          <div class="msg" id="pondMsg">
-            <div>聽聲音，戳破正確的注音泡泡！<br><small style="font-weight:600;font-size:15px">一共 5 題</small></div>
-            <button class="btn primary" id="warmStart">開始</button>
-          </div>
-        </div>
+        <div class="wmodes" id="warmModes"></div>
+        <div class="pond" id="pond"></div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <button class="btn small" id="warmAgain" disabled>🔊 再聽一次</button>
           <span class="fb" id="warmFb"></span>
@@ -560,6 +588,7 @@
       <div><div class="emoji">${today.emoji}</div><div class="ruby">${zhuyinRuby(today)}</div></div>
     </div>
     <div class="tip">👄 ${today.tip}</div>
+    <div class="more-words" id="moreWords"></div>
     <div class="btns">
       <button class="btn small" id="todaySay">🔊 聽一聽</button>
       <a class="btn small" href="materials.html?unit=${today.unit.id}&ch=${encodeURIComponent(today.ch)}">✍️ 去練寫</a>
@@ -567,6 +596,20 @@
     </div>`;
   $('todaySym').addEventListener('click', () => Voice.speakSymbol(today));
   $('todaySay').addEventListener('click', () => Voice.speakSymbol(today));
+  // 詞語庫裡還有哪些詞也有這個注音（點了會念）
+  const WORDS = (window.ZHUYIN_WORDS || []).filter(w => !w.dupEmoji);
+  const startsWith = (ch, wordStart) => WORDS.map(w => ({ ...w, i: w.zy.findIndex(z => z.replace(/^˙/, '')[0] === ch) }))
+                                             .filter(w => w.i >= 0 && !/˙/.test(w.zy[w.i]) && (!wordStart || w.i === 0));
+  const mark = (w, i) => [...w.word].map((c, k) => k === i ? `<mark>${c}</mark>` : c).join('');
+  function renderMoreWords() {
+    const list = shuffle((window.zhuyinWordsWith ? zhuyinWordsWith(today.ch) : []).filter(w => !w.dupEmoji && w.word !== today.word)).slice(0, 5);
+    $('moreWords').innerHTML = list.length ? `<span>還有這些詞：</span>${list.map(w => `<button data-w="${w.word}">${w.emoji}${mark(w, w.i)}</button>`).join('')}
+      <button data-a="more" title="換一批">🎲</button>` : '';
+  }
+  renderMoreWords();
+  $('moreWords').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.a === 'more') { window.Sfx && Sfx.play('select'); return renderMoreWords(); }
+    window.Sfx && Sfx.play('pop'); speak(b.dataset.w); });
 
   // ───────── 注音泡泡暖身（聽音辨識） ─────────
   const ROUNDS = 5;
@@ -574,7 +617,10 @@
   const warm = ZhuyinProgress.load('zhuyin-warmup');
   const showBest = () => $('warmScore').textContent = warm.best ? `最高分 ${warm.best} / ${ROUNDS} ⭐` : '';
   showBest();
+  let warmReplay = () => {};
   function warmStart() {
+    $('pond').className = 'pond';
+    warmReplay = () => qs[qi] && Voice.speakSymbol(qs[qi], { word: false, rate: 0.8 });
     qs = shuffle(SAYABLE).slice(0, ROUNDS); qi = 0; score = 0;
     $('warmAgain').disabled = false;
     nextQ();
@@ -621,24 +667,138 @@
     $('warmAgain').disabled = true;
     $('pond').innerHTML = `<div class="msg"><div>一次就答對 ${perfect} / ${ROUNDS} 題 ${'⭐'.repeat(Math.ceil(perfect / 2))}</div>
       <div style="font-size:16px;font-weight:600">${perfect === ROUNDS ? '太厲害了，全部一次答對！' : '多玩幾次，耳朵會越來越靈喔！'}</div>
-      <button class="btn primary" id="warmRe">再玩一次</button></div>`;
+      <div class="btns2"><button class="btn primary" id="warmRe">再玩一次</button> <button class="btn" id="warmNext">換一種玩法 ▶</button></div></div>`;
     $('warmRe').addEventListener('click', warmStart);
+    $('warmNext').addEventListener('click', nextMode);
     setFb('', '');
     window.Sfx && Sfx.play(perfect === ROUNDS ? 'fanfare' : 'checkpoint');
     speak(perfect === ROUNDS ? '太厲害了' : '完成了');
   }
   function setFb(t, c) { $('warmFb').textContent = t; $('warmFb').className = 'fb ' + c; }
-  $('warmStart').addEventListener('click', warmStart);
-  $('warmAgain').addEventListener('click', () => qs[qi] && Voice.speakSymbol(qs[qi], { word: false, rate: 0.8 }));
+  $('warmAgain').addEventListener('click', () => warmReplay());
+
+  // 練習場的四種玩法：每天預設不同，也可以自己換
+  const MODES = [
+    { id: 'bubble', ic: '🫧', t: '泡泡聽音', c: '#3d8fd1', intro: '聽聲音，戳破正確的注音泡泡！一共 5 題', start: warmStart },
+    { id: 'friends', ic: '🔍', t: '找朋友', c: '#5aa836', intro: '聽一個注音，把「第一個音」是它的圖全部找出來！', start: friendsStart },
+    { id: 'basket', ic: '🧺', t: '分類籃子', c: '#c9a227', intro: '聽起來很像的兩個注音，把詞放進對的籃子！', start: basketStart },
+    { id: 'blocks', ic: '🧱', t: '拼音積木', c: '#d0558f', intro: '看圖聽字，照順序點注音積木，把字拼出來！', start: blocksStart },
+  ];
+  let mode = MODES[dayNo % MODES.length];
+  function setMode(m) {
+    mode = m; warmReplay = () => {};
+    $('warmModes').innerHTML = MODES.map(x => `<button data-m="${x.id}" class="${x === m ? 'on' : ''}" style="--c:${x.c}">${x.ic} ${x.t}</button>`).join('');
+    $('warmTitle').textContent = `${m.ic} ${m.t}`;
+    $('pond').className = 'pond';
+    $('pond').innerHTML = `<div class="msg"><div>${m.intro}</div><button class="btn primary" id="warmGo">開始</button></div>`;
+    $('warmGo').addEventListener('click', () => m.start());
+    $('warmAgain').disabled = true; setFb('', '');
+  }
+  const nextMode = () => setMode(MODES[(MODES.indexOf(mode) + 1) % MODES.length]);
+  $('warmModes').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { window.Sfx && Sfx.play('select'); setMode(MODES.find(x => x.id === b.dataset.m)); } });
+  function stageEnd(text, perfect) {
+    $('pond').className = 'pond';
+    $('pond').innerHTML = `<div class="msg"><div>${text} ${perfect ? '⭐⭐⭐' : '⭐'}</div>
+      <div style="font-size:16px;font-weight:600">${perfect ? '太厲害了，一次都沒錯！' : '多玩幾次會越來越厲害喔！'}</div>
+      <div><button class="btn primary" id="warmRe">再玩一次</button> <button class="btn" id="warmNext">換一種玩法 ▶</button></div></div>`;
+    $('warmRe').addEventListener('click', () => mode.start());
+    $('warmNext').addEventListener('click', nextMode);
+    $('warmAgain').disabled = true; setFb('', '');
+    window.Sfx && Sfx.play(perfect ? 'fanfare' : 'checkpoint'); speak(perfect ? '太厲害了' : '完成了');
+  }
+  const stage = html => { $('pond').className = 'pond stage'; $('pond').innerHTML = html; $('warmAgain').disabled = false; };
+  const bump = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+
+  // 找朋友：第一個音是「ㄅ」的圖有哪些？
+  function friendsStart() {
+    const st = { round: 0, miss: 0 };
+    const chars = shuffle(ALL.filter(s => startsWith(s.ch, true).length >= 3)).slice(0, 3);
+    const round = () => {
+      if (st.round >= chars.length) return stageEnd(`找朋友完成！`, st.miss === 0);
+      const s = chars[st.round], yes = shuffle(startsWith(s.ch, true)).slice(0, randInt(2, 3));
+      const no = shuffle(WORDS.filter(w => w.zy[0].replace(/^˙/, '')[0] !== s.ch && !yes.some(y => y.emoji === w.emoji))).slice(0, 6 - yes.length);
+      const all = shuffle([...yes.map(w => ({ ...w, ok: true })), ...no]);
+      let found = 0;
+      warmReplay = () => Voice.speakSymbol(s, { word: false, rate: .8 });
+      stage(`<h4>找出第一個音是「<span class="big-zy">${s.ch}</span>」的圖（有 ${yes.length} 個）</h4>
+        <div class="fgrid">${all.map((w, k) => `<button class="pic" data-k="${k}">${w.emoji}${w.word}</button>`).join('')}</div>`);
+      setFb(`第 ${st.round + 1} 題`, '');
+      setTimeout(warmReplay, 300);
+      $('pond').querySelectorAll('.pic').forEach(b => b.onclick = () => {
+        const w = all[+b.dataset.k];
+        if (b.classList.contains('done')) return;
+        speak(w.word);
+        if (w.ok) { b.classList.add('ok', 'done'); found++; window.Sfx && Sfx.play('gem');
+          if (found === yes.length) { setFb('全部找到了！', 'ok'); window.Sfx && Sfx.play('correct'); st.round++; setTimeout(round, 1400); }
+          else setFb(`找到 ${found} 個，還有 ${yes.length - found} 個！`, 'ok'); }
+        else { bump(b, 'no'); st.miss++; window.Sfx && Sfx.play('wrong'); setFb(`「${w.word}」的第一個音不是 ${s.ch} 喔`, 'bad'); }
+      });
+    };
+    round();
+  }
+  // 分類籃子：ㄓ 還是 ㄗ？（聽音辨識的易混淆組）
+  function basketStart() {
+    const pr = rand(ZHUYIN_PAIRS), items = shuffle(pr.items).slice(0, 6), st = { k: 0, miss: 0, a: 0, b: 0 };
+    const show = () => {
+      if (st.k >= items.length) return stageEnd(`${pr.a}／${pr.b} 分類完成！`, st.miss === 0);
+      const it = items[st.k];
+      warmReplay = () => speak(it.word);
+      stage(`<h4>${pr.title}：「${it.word[it.at]}」要放哪一籃？</h4>
+        <div class="item-card" id="itemCard">${it.emoji}${mark({ word: it.word }, it.at)}</div>
+        <div class="baskets"><button class="basket" data-a="a">${pr.a}<small>${st.a}</small></button><button class="basket" data-a="b">${pr.b}<small>${st.b}</small></button></div>`);
+      setFb(`第 ${st.k + 1} / ${items.length} 個`, '');
+      setTimeout(warmReplay, 300);
+      $('pond').querySelectorAll('.basket').forEach(b => b.onclick = () => {
+        if (b.dataset.a === it.ans) { st[it.ans]++; $('itemCard').classList.add('fly'); window.Sfx && Sfx.play('coin'); setFb(`對！${it.word[it.at]} 是 ${it.zy}`, 'ok'); st.k++; setTimeout(show, 900); }
+        else { bump(b, 'no'); st.miss++; window.Sfx && Sfx.play('wrong'); setFb(it.ans === 'a' ? pr.tipA : pr.tipB, 'bad'); speak(it.word); }
+      });
+    };
+    show();
+  }
+  // 拼音積木：照順序點注音，把字拼出來
+  function blocksStart() {
+    const strip = z => [...z.replace(/[ˊˇˋ˙]/g, '')];
+    const cand = shuffle(WORDS.filter(w => strip(w.zy[0]).length >= 2)).slice(0, 3), st = { k: 0, miss: 0 };
+    const cls = c => 'ㄧㄨㄩ'.includes(c) ? 'ㄧㄨㄩ' : 'ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙ'.includes(c) ? 'ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙ' : 'ㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦ';
+    const show = () => {
+      if (st.k >= cand.length) return stageEnd('拼音積木完成！', st.miss === 0);
+      const w = cand[st.k], sp = strip(w.zy[0]);
+      const extra = shuffle(sp.flatMap(c => [...cls(c)]).filter(c => !sp.includes(c))).filter((c, i, a) => a.indexOf(c) === i).slice(0, 3);
+      const tiles = shuffle([...sp, ...extra]);
+      let at = 0;
+      warmReplay = () => speak(`${w.word[0]}，${w.word}的${w.word[0]}`);
+      stage(`<h4>拼出「${w.word[0]}」（${w.word}）</h4><div class="item-card">${w.emoji}${mark(w, 0)}</div>
+        <div class="slots">${sp.map((c, i) => `<div class="slot ${i ? '' : 'cur'}">？</div>`).join('')}</div>
+        <div class="tiles">${tiles.map((c, i) => `<button class="tile2" data-i="${i}">${c}</button>`).join('')}</div>`);
+      setFb(`第 ${st.k + 1} / ${cand.length} 個字`, '');
+      setTimeout(warmReplay, 300);
+      const slots = [...$('pond').querySelectorAll('.slot')];
+      $('pond').querySelectorAll('.tile2').forEach(b => b.onclick = () => {
+        if (b.classList.contains('used')) return;
+        const c = tiles[+b.dataset.i];
+        if (c === sp[at]) {
+          b.classList.add('used'); slots[at].textContent = c; slots[at].className = 'slot fill'; at++;
+          if (slots[at]) slots[at].classList.add('cur');
+          window.Sfx && Sfx.play('coin'); Voice.speakSymbol(ZHUYIN_INDEX[c], { word: false, rate: .85 });
+          if (at === sp.length) { setFb(`拼對了！${sp.join('')} → ${w.word[0]}`, 'ok'); window.Sfx && Sfx.play('correct'); setTimeout(() => speak(w.word), 700); st.k++; setTimeout(show, 1900); }
+        } else { bump(b, 'no'); st.miss++; window.Sfx && Sfx.play('wrong'); setFb(at === 0 ? '先從第一個音開始喔！' : '再聽聽看下一個音～', 'bad'); }
+      });
+    };
+    show();
+  }
+  const randInt = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  setMode(mode);
 
   // ───────── 五感體驗：每張卡片翻過來有一個小互動 ─────────
   const pick3 = s => shuffle([s, ...shuffle(ALL.filter(x => x !== s && x.unit !== s.unit)).slice(0, 2)]);
   const SENSES = [
     { key: 'see', ic: '👀', t: '看一看', d: '彩色大字、圖片、例詞和注音，一眼就懂。', bg: '#fff7e0', c: '#c9a227', build(box) {
-      const show = () => { const s = rand(ALL); box.innerHTML = `<h4>看看這是什麼注音？</h4>
-        <div class="zy-big" style="color:${s.unit.color}" title="點我聽">${s.ch}</div><div class="emo">${s.emoji}</div><div class="ruby" style="font-size:30px">${zhuyinRuby(s)}</div>
+      const show = () => { const s = rand(ALL), more = startsWith(s.ch, true), w = more.length ? rand(more) : null;
+        const shown = w ? { word: w.word, reading: w.zy, at: w.i, emoji: w.emoji } : s;
+        box.innerHTML = `<h4>看看這是什麼注音？</h4>
+        <div class="zy-big" style="color:${s.unit.color}" title="點我聽">${s.ch}</div><div class="emo">${shown.emoji}</div><div class="ruby" style="font-size:30px">${zhuyinRuby(shown)}</div>
         <div class="row2"><button class="btn small" data-a="next">🎲 換一個</button></div>`;
-        box.querySelector('.zy-big').onclick = () => Voice.speakSymbol(s);
+        box.querySelector('.zy-big').onclick = () => Voice.speakSymbol({ ...s, word: shown.word });
         box.querySelector('[data-a=next]').onclick = () => { window.Sfx && Sfx.play('select'); show(); }; };
       show();
     } },
@@ -695,13 +855,16 @@
     } },
     { key: 'play', ic: '🎮', t: '玩一玩', d: '泡泡暖身、冒險闖關，學習變遊戲。', bg: '#fff1de', c: '#f08a3c', build(box) {
       let s, gems = 0;
-      const ask = () => { s = rand(ALL);
-        box.innerHTML = `<h4>「<span style="font-family:var(--font-teach);font-size:30px;color:${s.unit.color}">${s.ch}</span>」的圖是哪一個？</h4>
-          <div class="row2">${pick3(s).map(x => `<button class="choice emoji" data-ch="${x.ch}" title="${x.word}">${x.emoji}</button>`).join('')}</div>
+      const ask = () => { s = rand(ALL.filter(x => startsWith(x.ch, true).length));
+        const right = rand(startsWith(s.ch, true));
+        const wrong = shuffle(WORDS.filter(w => w.zy[0].replace(/^˙/, '')[0] !== s.ch && w.emoji !== right.emoji)).slice(0, 2);
+        const opts = shuffle([{ ...right, ok: true }, ...wrong]);
+        box.innerHTML = `<h4>哪一個的第一個音是「<span style="font-family:var(--font-teach);font-size:30px;color:${s.unit.color}">${s.ch}</span>」？</h4>
+          <div class="row2">${opts.map((x, k) => `<button class="choice emoji" data-k="${k}" title="${x.word}">${x.emoji}</button>`).join('')}</div>
           <div class="fb2"></div><div class="gem-n">💎 ${gems}</div><a class="btn small" href="game.html">🎮 去冒險遊戲</a>`;
         box.querySelectorAll('.choice').forEach(b => b.onclick = () => {
-          const x = ALL.find(a => a.ch === b.dataset.ch);
-          if (x === s) { b.classList.add('ok'); gems++; box.querySelector('.gem-n').textContent = `💎 ${gems}`; window.Sfx && Sfx.play('gem'); box.querySelector('.fb2').textContent = `答對了！${s.ch}，${s.word}`; Voice.speakSymbol(s); setTimeout(ask, 1600); }
+          const x = opts[+b.dataset.k];
+          if (x.ok) { b.classList.add('ok'); gems++; box.querySelector('.gem-n').textContent = `💎 ${gems}`; window.Sfx && Sfx.play('gem'); box.querySelector('.fb2').textContent = `答對了！${s.ch}，${x.word}`; Voice.speakSymbol({ ...s, word: x.word }); setTimeout(ask, 1600); }
           else { b.classList.remove('no'); void b.offsetWidth; b.classList.add('no'); window.Sfx && Sfx.play('wrong'); box.querySelector('.fb2').textContent = `這是「${x.word}」，再找找看！`; }
         });
       };
@@ -779,8 +942,8 @@
   // 單元地圖：點注音聽發音，整個單元都聽過就亮起來
   $('path').addEventListener('click', e => {
     const b = e.target.closest('.sy'); if (!b) return;
-    const s = ALL.find(x => x.ch === b.dataset.ch), stone = b.closest('.stone');
-    Voice.speakSymbol(s);
+    const s = ALL.find(x => x.ch === b.dataset.ch), stone = b.closest('.stone'), more = startsWith(s.ch, true);
+    Voice.speakSymbol(more.length ? { ...s, word: rand(more).word } : s);           // 每次念不同的詞
     b.classList.remove('heard'); void b.offsetWidth; b.classList.add('heard');
     window.Sfx && Sfx.play('pop');
     if (!heard.has(s.ch)) {

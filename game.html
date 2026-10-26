@@ -1090,7 +1090,7 @@
     clearScreen.classList.remove('hidden');
   }
   document.getElementById('againBtn').addEventListener('click', () => startLevel(level.id));
-  document.getElementById('beeSay').addEventListener('click', () => (state === 'shell' ? () => {} : state === 'tone' ? sayTone : state === 'ice' ? sayIce : sayTarget)());
+  document.getElementById('beeSay').addEventListener('click', () => (state === 'shell' ? shellPeek : state === 'tone' ? sayTone : state === 'ice' ? sayIce : sayTarget)());
   document.getElementById('mapBtn').addEventListener('click', () => showLevelSelect(true));
   document.getElementById('nextBtn').addEventListener('click', () => startLevel(level.id + 1));
   document.getElementById('lvlBtn').addEventListener('click', () => {
@@ -1222,7 +1222,7 @@
     document.getElementById('progress').classList.add('hidden');
     document.body.classList.add('bees-mode');
     beeHud().classList.remove('hidden'); document.getElementById('beeTip').textContent = tip;
-    document.getElementById('beeSay').hidden = state === 'shell';
+    const say = document.getElementById('beeSay'); say.hidden = false; say.disabled = false; say.textContent = '🔊 再聽一次';
   }
   function closeMiniHud() { beeHud().classList.add('hidden'); document.body.classList.remove('bees-mode'); }
   // 聽音題：從這一關的注音裡挑一個還沒考過的
@@ -1465,6 +1465,15 @@
   }
   const tapXY = e => [e.clientX / innerWidth * viewW, e.clientY / innerHeight * VIEW_H];
 
+  // 從詞語庫挑一個詞，某個字的第一個注音是 ch（盡量不要「子」這種輕聲字）；avoid = 已經用過的圖
+  function wordFor(ch, avoid = [], wordStart = false) {           // wordStart：只看圖的時候，要選「整個詞的開頭」就是這個音的詞
+    const all = (window.zhuyinWordsWith ? zhuyinWordsWith(ch, { first: true }) : []).filter(w => !w.dupEmoji && !avoid.includes(w.emoji));
+    const good = all.filter(w => !/˙/.test(w.zy[w.i]) && (!wordStart || w.i === 0)), list = good.length ? good : all;
+    if (list.length) return list[randi(0, list.length - 1)];
+    const s = ZHUYIN_INDEX[ch];
+    return { word: s.word, zy: s.reading, emoji: s.emoji, i: s.at };
+  }
+
   // ───────── 第 2 關：章魚把注音藏進貝殼裡，翻兩個貝殼，找出「注音」和「它的圖」 ─────────
   const SHELL = { phase: '', t: 0, hp: 4, cards: [], open: [], sel: 0, locked: false, hurt: 0, flips: 0 };
   const SHELL_SEA = 180;
@@ -1472,7 +1481,7 @@
   function sayCard(c) {
     if (!window.Voice || !window.ZHUYIN_INDEX) return;
     const s = ZHUYIN_INDEX[c.ch];
-    if (c.pic) Voice.speak(s.word, 0.85); else Voice.speakSymbol(s, { word: false, rate: 0.8 });
+    if (c.pic) Voice.speak(c.w.word, 0.85); else Voice.speakSymbol(s, { word: false, rate: 0.8 });
   }
   function shellLayout() {                                         // 2 排 × 4 個貝殼，排在沙灘上
     const n = SHELL.cards.length, cols = Math.ceil(n / 2), gapX = Math.min(170, (viewW - 160) / cols);
@@ -1481,18 +1490,32 @@
   function startShellGame() {
     state = 'shell'; miniTimers = []; particles = []; popups = [];
     const pool = [...(level.symbols || LISTEN_ALL)].sort(() => Math.random() - .5).slice(0, 4);
-    const cards = [];
-    pool.forEach(ch => { cards.push({ ch, pic: false }); cards.push({ ch, pic: true }); });
-    Object.assign(SHELL, { phase: 'play', t: 0, hp: pool.length, cards: cards.sort(() => Math.random() - .5).map(c => ({ ...c, flip: 0, up: false, done: false, wrong: 0 })),
-                           open: [], sel: 0, locked: false, hurt: 0, flips: 0 });
+    const cards = [], used = [];
+    pool.forEach(ch => { const w = wordFor(ch, used, true); used.push(w.emoji); cards.push({ ch, pic: false, w }); cards.push({ ch, pic: true, w }); });
+    Object.assign(SHELL, { phase: 'peek', t: 0, hp: pool.length, cards: cards.sort(() => Math.random() - .5).map(c => ({ ...c, flip: 0, up: true, done: false, wrong: 0, seen: 0, glow: 0 })),
+                           open: [], sel: 0, locked: true, hurt: 0, flips: 0, peeks: 2 });
     shellLayout();
-    openMiniHud('點貝殼翻開（或用 ←→ 選、空白鍵翻）：找出注音和它的圖，兩個一組'); hudHp('🐙', SHELL.hp);
-    beeMsg('章魚把注音藏進貝殼裡了！翻兩個貝殼，找出一樣的聲音！');
-    toast('翻貝殼配對：注音 ＋ 它的圖', 2.6);
+    openMiniHud('先記住位置！再點貝殼翻開（或用 ←→ 選、空白鍵翻）：注音和它的圖是一組'); hudHp('🐙', SHELL.hp);
+    shellPeekBtn();
+    toast('先記住貝殼下面是什麼！', 2.6);
+    [3, 2, 1].forEach((n, k) => after(1 + k * 1.1, () => { beeMsg(`先記住位置！${n}…`); window.Sfx && Sfx.play('click'); }));
+    after(4.3, () => { SHELL.cards.forEach(c => c.up = false); SHELL.phase = 'play'; SHELL.locked = false; window.Sfx && Sfx.play('pop');
+                       beeMsg('貝殼蓋起來了！翻兩個，找出注音和它的圖！'); });
+  }
+  function shellPeekBtn() {                                         // 「偷看一下」：全部打開 1.5 秒（每局 2 次）
+    const b = document.getElementById('beeSay');
+    b.hidden = false; b.textContent = `👀 偷看一下（${SHELL.peeks}）`; b.disabled = SHELL.peeks <= 0;
+  }
+  function shellPeek() {
+    if (SHELL.phase !== 'play' || SHELL.locked || SHELL.peeks <= 0) return;
+    SHELL.peeks--; shellPeekBtn(); SHELL.locked = true;
+    const shut = SHELL.cards.filter(c => !c.up && !c.done);
+    shut.forEach(c => c.up = true); window.Sfx && Sfx.play('pop');
+    after(1.5, () => { shut.forEach(c => c.up = false); SHELL.locked = false; });
   }
   function flipShell(c) {
     if (SHELL.phase !== 'play' || SHELL.locked || !c || c.up || c.done) return;
-    c.up = true; SHELL.open.push(c); SHELL.flips++;
+    c.up = true; c.seen++; SHELL.open.push(c); SHELL.flips++;
     window.Sfx && Sfx.play('pop');
     sayCard(c);
     if (SHELL.open.length < 2) return;
@@ -1503,21 +1526,27 @@
         a.done = b.done = true; SHELL.open = []; SHELL.locked = false;
         SHELL.hp--; hudHp('🐙', SHELL.hp); SHELL.hurt = .7;
         flash = { t: .25, color: '255,255,255' }; cam.shake = .2;
-        const s = ZHUYIN_INDEX[a.ch];
-        popups.push({ x: (a.x + b.x) / 2, y: Math.min(a.y, b.y) - 60, text: `${a.ch} ${s.word}`, t: 0 });
+        const s = ZHUYIN_INDEX[a.ch], w = a.w;
+        popups.push({ x: (a.x + b.x) / 2, y: Math.min(a.y, b.y) - 60, text: `${a.ch} ${w.word}`, t: 0 });
         for (const c2 of [a, b]) for (let i = 0; i < 10; i++) particles.push({ x: c2.x, y: c2.y, vx: rand(-200, 200), vy: rand(-300, -40), t: 0, life: .7, star: true });
         window.Sfx && Sfx.play('correct');
-        Voice.speakSymbol(s);
-        beeMsg(`配對成功！「${a.ch}」就是「${s.word}」的${s.word[s.at]}！`, 'ok');
+        Voice.speakSymbol(s, { word: false }); setTimeout(() => window.Voice && Voice.speak(w.word, 0.85), 900);
+        beeMsg(`配對成功！「${w.word[w.i]}」的第一個音就是「${a.ch}」！`, 'ok');
         if (SHELL.hp <= 0) after(1.4, shellWin);
       });
-    } else {                                                        // 不一樣：看一下再蓋回去（不算錯，記憶遊戲本來就要多翻幾次）
-      after(.5, () => { a.wrong = b.wrong = .5; window.Sfx && Sfx.play('wrong'); beeMsg('不是一組喔，記住它們的位置！', 'bad'); });
-      after(1.6, () => { a.up = b.up = false; SHELL.open = []; SHELL.locked = false; });
+    } else {                                                        // 不一樣：看一下再蓋回去（不算錯，也不扣血，記憶遊戲本來就要多翻幾次）
+      after(.4, () => beeMsg('不是同一組，記住它們的位置，再找找看～'));
+      after(1.6, () => {
+        a.up = b.up = false; SHELL.open = []; SHELL.locked = false;
+        for (const c of [a, b]) if (c.seen >= 2) {                 // 同一個貝殼翻兩次還沒配到：讓它的另一半閃一下
+          const mate = SHELL.cards.find(m => m !== c && m.ch === c.ch && !m.done);
+          if (mate) { mate.glow = 1.6; beeMsg('提示：會發亮的貝殼，是剛剛那個的另一半喔！', 'ok'); }
+        }
+      });
     }
   }
   function shellWin() {
-    SHELL.phase = 'win'; SHELL.t = 0;
+    SHELL.phase = 'win'; SHELL.t = 0; document.getElementById('beeSay').hidden = true;
     saveGameRecord(1);
     beeMsg('全部找到了！章魚大王認輸，游回大海去了！', 'ok');
     window.Sfx && Sfx.play('zap');
@@ -1535,7 +1564,7 @@
   }
   function shellStep(dt) {
     SHELL.t += dt; SHELL.hurt = Math.max(0, SHELL.hurt - dt);
-    for (const c of SHELL.cards) { c.flip += ((c.up || c.done ? 1 : 0) - c.flip) * Math.min(1, dt * 12); if (c.wrong > 0) c.wrong -= dt; }
+    for (const c of SHELL.cards) { c.flip += ((c.up || c.done ? 1 : 0) - c.flip) * Math.min(1, dt * 12); if (c.wrong > 0) c.wrong -= dt; if (c.glow > 0) c.glow -= dt; }
     miniTick(dt);
   }
   function drawShellCard(c, selected) {
@@ -1544,6 +1573,7 @@
     ctx.save(); ctx.translate(c.x + shake, c.y + (c.done ? Math.sin(SHELL.t * 3 + c.x) * 3 : 0)); ctx.scale(Math.max(.04, sx), 1);
     ctx.fillStyle = 'rgba(80,50,20,.25)'; ctx.fillRect(-W / 2 + 6, H / 2 - 4, W, 10);
     if (!front) {                                                  // 貝殼背面：像素扇貝
+      if (c.glow > 0 && Math.floor(c.glow * 6) % 2) { ctx.fillStyle = '#ffcf3f'; ctx.fillRect(-W / 2 - 10, -H / 2 - 10, W + 20, H + 20); }
       ctx.fillStyle = selected ? '#f08a3c' : '#3b2414'; ctx.fillRect(-W / 2 - 4, -H / 2 - 4, W + 8, H + 8);
       ctx.fillStyle = '#ffb3c7'; ctx.fillRect(-W / 2, -H / 2, W, H);
       ctx.fillStyle = '#ff8fa3'; for (let i = 0; i < 5; i++) ctx.fillRect(-W / 2 + 8 + i * 22, -H / 2 + 10, 12, H - 30);
@@ -1553,8 +1583,8 @@
       ctx.fillStyle = selected ? '#f08a3c' : c.done ? '#2e9d4a' : '#3b2414'; ctx.fillRect(-W / 2 - 4, -H / 2 - 4, W + 8, H + 8);
       ctx.fillStyle = c.wrong > 0 ? '#ffd6d6' : c.done ? '#e2fbd9' : '#fffaeb'; ctx.fillRect(-W / 2, -H / 2, W, H);
       const s = ZHUYIN_INDEX[c.ch];
-      if (c.pic) { const img = pxEmoji(s.emoji, 24); ctx.imageSmoothingEnabled = false; if (img) ctx.drawImage(img, -32, -38, 64, 64);
-                   ctx.fillStyle = '#7a6450'; ctx.font = '18px "PingFang TC","Noto Sans TC",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s.word, 0, 34); }
+      if (c.pic) { const img = pxEmoji(c.w.emoji, 24); ctx.imageSmoothingEnabled = false; if (img) ctx.drawImage(img, -32, -38, 64, 64);
+                   ctx.fillStyle = '#7a6450'; ctx.font = '18px "PingFang TC","Noto Sans TC",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(c.w.word, 0, 34); }
       else { ctx.fillStyle = s.unit.color; ctx.font = '62px "PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(c.ch, 0, 4); }
     }
     ctx.restore();
@@ -1590,6 +1620,7 @@
     const out = [], seen = new Set();
     const add = (char, word, emoji, zy) => { const t = toneOf(zy || ''); if (t < 0 || !zy || seen.has(char)) return; seen.add(char); out.push({ char, word, emoji, zy: zy.replace(/[ˊˇˋ˙]/g, ''), tone: t }); };
     for (const u of window.ZHUYIN_UNITS || []) for (const s of u.symbols) [...s.word].forEach((c, i) => add(c, s.word, s.emoji, s.reading[i]));
+    for (const w of window.ZHUYIN_WORDS || []) if (!w.dupEmoji) [...w.word].forEach((c, i) => add(c, w.word, w.emoji, w.zy[i]));   // 詞語庫
     for (const pr of window.ZHUYIN_PAIRS || []) for (const it of pr.items) add(it.word[it.at], it.word, it.emoji, it.zy);
     return out;
   }
@@ -1767,6 +1798,7 @@
       seen.add(char); out.push({ char, word, emoji, spell });
     };
     for (const u of window.ZHUYIN_UNITS || []) for (const s of u.symbols) [...s.word].forEach((c, i) => add(c, s.word, s.emoji, s.reading[i]));
+    for (const w of window.ZHUYIN_WORDS || []) if (!w.dupEmoji) [...w.word].forEach((c, i) => add(c, w.word, w.emoji, w.zy[i]));   // 詞語庫
     for (const pr of window.ZHUYIN_PAIRS || []) for (const it of pr.items) add(it.word[it.at], it.word, it.emoji, it.zy);
     return out;
   }
@@ -1963,9 +1995,11 @@
     const src = [...(level.symbols || ZHUYIN)].filter(c => ZHUYIN_INDEX[c] && !gen.quizUsed.includes(c));
     const ch = src.length ? src[randi(0, src.length - 1)] : 'ㄅ';
     gen.quizUsed.push(ch);
-    const s = ZHUYIN_INDEX[ch], zy = plainZy(s.reading[s.at] || ''), cls = zyClass(ch);
+    let w = wordFor(ch);                                             // 詞語庫：第一個音是 ch 的詞；韻母沒有的話改用「含有」
+    if (plainZy(w.zy[w.i] || '')[0] !== ch) { const any = (window.zhuyinWordsWith ? zhuyinWordsWith(ch) : []).filter(x => !x.dupEmoji); if (any.length) w = any[randi(0, any.length - 1)]; }
+    const zy = plainZy(w.zy[w.i] || ''), cls = zyClass(ch);
     const others = pickOptions(ch, 9, [...(level.symbols || '')].filter(c => cls.includes(c)), [...cls]).filter(c => c !== ch && !zy.includes(c)).slice(0, 2);
-    return { ch, char: s.word[s.at], word: s.word, emoji: s.emoji, first: zy[0] === ch, opts: [ch, ...others].sort(() => Math.random() - .5) };
+    return { ch, char: w.word[w.i], word: w.word, emoji: w.emoji, first: zy[0] === ch, opts: [ch, ...others].sort(() => Math.random() - .5) };
   }
   function placeQuiz() {
     gen.quizAt.shift();
